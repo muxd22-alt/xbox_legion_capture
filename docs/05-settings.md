@@ -109,8 +109,9 @@ Record the result of each. Do not tune two things at once.
 # display mode
 kscreen-doctor -o | grep -E '1920x1080|120'
 
-# capture formats
-v4l2-ctl -d /dev/video0 --list-formats-ext
+# capture formats (use the stable by-id node)
+ls -l /dev/v4l/by-id/
+v4l2-ctl -d /dev/v4l/by-id/<your-card>-video-index0 --list-formats-ext
 
 # lsfg config
 ~/.local/bin/lsfg-vk-cli validate
@@ -123,6 +124,12 @@ v4l2-ctl -d /dev/video0 --list-formats-ext
 # Vulkan layer
 ls ~/.local/share/vulkan/implicit_layer.d/ | grep -i lsfg
 
-# fps
-MANGOHUD=1 mpv av://v4l2:/dev/video0 --fs ...
+# fps - but read the caveat below before believing a low number
+MANGOHUD=1 mpv av://v4l2:/dev/v4l/by-id/<your-card>-video-index0 --fs ...
 ```
+
+**Overlay caveat:** MangoHud is a Vulkan layer and may load *before* lsfg-vk.
+When that happens it only sees the app's 30 fps and reports 30 even though frame
+generation is working. Trust the `(lsfg-vk)` lines in the terminal, the visible
+smoothness and the monitor's 120 Hz indication first. lsfg-vk documents this
+layer-order limitation.

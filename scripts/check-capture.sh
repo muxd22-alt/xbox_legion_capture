@@ -14,6 +14,10 @@ else
 fi
 
 echo
+echo "== stable by-id paths (use these, not /dev/videoN) =="
+ls -l /dev/v4l/by-id/ 2>/dev/null || echo "  (none)"
+
+echo
 echo "== formats per device =="
 for dev in /dev/video*; do
     [ -e "$dev" ] || continue
@@ -39,5 +43,6 @@ fi
 echo
 echo "== expected =="
 echo "  1920x1080 @ 30 fps for the lsfg 4x path (60 also fine, then use --vf=fps=30)."
+echo "  Prefer the /dev/v4l/by-id/... path: /dev/videoN can swap between boots."
 echo "  MJPG is expected; YUYV/NV12 is better if offered at 30."
 echo "  If only 30 is missing, check the Xbox output setting and the HDMI cable."

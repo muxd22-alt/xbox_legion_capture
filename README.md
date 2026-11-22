@@ -30,12 +30,13 @@ Capture at 30. Multiply by 4. Keep the monitor at 120 Hz.
 
 1. **Xbox:** 1080p, 60 Hz, HDR off, VRR off, 8-bit, stereo audio.
 2. **Monitor:** 1920x1080 @ 120 Hz, SDR, 100% scaling.
-3. **Card:** verify `1920x1080 @ 30` with
-   `v4l2-ctl -d /dev/video0 --list-formats-ext`.
+3. **Card:** find the stable node with `ls -l /dev/v4l/by-id/`, then verify
+   `1920x1080 @ 30` with `v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext`.
 4. **lsfg-vk:** Lossless Scaling on Steam (beta `lsfg-vk`), then
    `ujust get-lsfg install`; profile `mpv`, multiplier **4**, flow **0.5**,
    performance **on**, pacing **vsync**.
-5. **mpv:** run `docs/02-bazzite-setup.md` step 6, confirm ~120 with MangoHud.
+5. **mpv:** run `docs/02-bazzite-setup.md` step 6. Confirm the `(lsfg-vk)`
+   lines and visible smoothness; MangoHud can under-report (see step 7).
 
 Full steps: `docs/02-bazzite-setup.md`.
 Checklist: `docs/03-checklist.md`.
@@ -138,14 +139,19 @@ renderer, and there is no game here. Use mpv's own shader chain instead, after
 120 is stable. CAS 1.2 for sharpening, `deband=yes` for MJPEG banding. Details:
 `docs/07-post-processing.md`.
 
+New tools from November 2026 that are worth a look (and the ones to ignore):
+`docs/08-new-tools-2026-11.md`. Short version: VeyAmux is the only one that
+matters, and it caps at 3x (90 fps), so mpv + lsfg 4x stays the 120 path.
+
 ## Verify
 
 ```bash
 # 120 Hz display
 kscreen-doctor -o
 
-# 1080p30 capture
-v4l2-ctl -d /dev/video0 --list-formats-ext
+# 1080p30 capture (stable by-id node)
+ls -l /dev/v4l/by-id/
+v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext
 
 # lsfg installed and valid
 ujust get-lsfg status
@@ -153,12 +159,15 @@ ujust get-lsfg status
 ls ~/.local/share/vulkan/implicit_layer.d/ | grep -i lsfg
 
 # 120 fps output
-MANGOHUD=1 mpv av://v4l2:/dev/video0 --fs \
+MANGOHUD=1 mpv av://v4l2:/dev/v4l/by-id/<card>-video-index0 --fs \
   --profile=low-latency --untimed --video-sync=desync \
   --demuxer-lavf-o=video_size=1920x1080,framerate=30,input_format=mjpeg \
   --vo=gpu-next --gpu-api=vulkan --hwdec=vaapi \
   --no-audio --no-osc --osd-level=0
 ```
+
+If MangoHud shows 30 while the picture is smooth, it loaded above lsfg-vk and
+is seeing only the app's frames. Check the `(lsfg-vk)` terminal lines instead.
 
 ## Repo map
 
@@ -171,6 +180,7 @@ MANGOHUD=1 mpv av://v4l2:/dev/video0 --fs \
 | `docs/05-settings.md` | Xbox / capture / monitor / lsfg / mpv settings and test matrix. |
 | `docs/06-alternatives.md` | Veyra, desktop GPU, Decky, OBS, capture card upgrades. |
 | `docs/07-post-processing.md` | Safe mpv shader chain (CAS/FSR1/deband); why OptiScaler/ReShade do not apply. |
+| `docs/08-new-tools-2026-11.md` | November 2026 GitHub survey: what applies to a capture feed and what does not. |
 | `configs/lsfg-vk-120.toml` | lsfg-vk profile: multiplier 4, 1080p120. |
 | `configs/mpv-lsfg.conf` | mpv config for 1080p30 -> 4x -> 120. |
 | `scripts/check-capture.sh` | Lists V4L2 devices, formats and audio sources. |

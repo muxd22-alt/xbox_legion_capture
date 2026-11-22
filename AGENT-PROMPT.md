@@ -45,9 +45,10 @@ network streaming, 4K, HDR, Windows, Veyra. HDR stays off end to end.
 
 1. Collect facts and show me the output:
    `bazzite-version`, `plasmashell --version`, `mpv --version`,
-   `kscreen-doctor -o`, `v4l2-ctl --list-devices`,
-   `v4l2-ctl -d <capture-node> --list-formats-ext`, `wpctl status`,
-   `ujust get-lsfg status`, `lsfg-vk-cli validate`, `lsfg-vk-cli healthcheck`.
+   `kscreen-doctor -o`, `ls -l /dev/v4l/by-id/`, `v4l2-ctl --list-devices`,
+   `v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext`,
+   `wpctl status`, `ujust get-lsfg status`, `lsfg-vk-cli validate`,
+   `lsfg-vk-cli healthcheck`. Use the stable by-id node, not `/dev/video0`.
 
 2. Display. Confirm the external output is **1920x1080@120**, scaling 100%,
    HDR off. If it is 60 Hz, fix it before anything else. Pass: `kscreen-doctor`
@@ -71,9 +72,12 @@ network streaming, 4K, HDR, Windows, Veyra. HDR stays off end to end.
 5. mpv baseline with lsfg disabled: stable 30 fps, correct colours, no black
    frames. Pass: 30 fps for 2 minutes.
 
-6. mpv with lsfg enabled: MangoHud should read ~120. If frame gen does not
-   start, re-test without MangoHud and without other Vulkan layers. Pass: ~120
-   and playable.
+6. mpv with lsfg enabled. First confirm from the terminal that the
+   `(lsfg-vk)` profile lines appear, and that the picture is visibly smoother.
+   MangoHud may report 30 even when frame gen works, because it can load before
+   lsfg-vk in the layer chain; do not use it as the only check. If frame gen
+   does not start, re-test without MangoHud and without other Vulkan layers.
+   Pass: visibly 120-ish and playable.
 
 7. Soak test: 10 minutes of GTA VI driving. Check for desync, black frames,
    HUD readability, and whether I prefer it to 30 fps native.
@@ -82,6 +86,11 @@ network streaming, 4K, HDR, Windows, Veyra. HDR stays off end to end.
    `deband=yes` (see docs/07-post-processing.md). Do not install OptiScaler,
    ReShade, DLSS Enabler, vkBasalt, or any "DLSS 5" runtime; there is no game
    to hook, and stacking Vulkan layers breaks lsfg pacing.
+
+9. Optional experiment: VeyAmux (docs/08-new-tools-2026-11.md) is a new
+   Bazzite-tested capture front-end, but its frame gen caps at 3x, so 30 fps
+   becomes 90, not 120. Compare it as a picture-quality alternative; do not
+   replace the mpv 4x/120 path unless I prefer 90 with fewer artefacts.
 
 **Fallback ladder if 120 does not hold:**
 1. Check TDP/clocks: plug in, performance profile. At 15 W the 680M cannot do

@@ -126,9 +126,9 @@ If fps drops below 120, remove shaders before lowering the multiplier.
 
 ```bash
 # shader compile errors show up here
-mpv av://v4l2:/dev/video0 --fs --msg-level=all=warn ...
+mpv av://v4l2:/dev/v4l/by-id/<card>-video-index0 --fs --msg-level=all=warn ...
 
-# optional fps check (may itself disturb lsfg; test without it too)
+# optional fps check (MangoHud may load above lsfg-vk and under-report)
 MANGOHUD=1 mpv ...
 ```
 

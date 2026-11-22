@@ -10,7 +10,7 @@ This is the working path. Do it in Desktop Mode.
   a Vulkan implicit layer, and a Flatpak mpv cannot see a layer installed in
   `~/.local`. If you must use the Flatpak, install the layer into the Flatpak
   runtime as described at `https://lsfg-vk.dev/docs/installation/flatpak/`.
-- The capture card at `/dev/video0`.
+- The capture card at the `/dev/v4l/by-id/...` node.
 - The monitor set to **1920x1080@120, SDR, 100% scaling**.
 
 ## 1. Install lsfg-vk V2
@@ -155,13 +155,19 @@ Also in System Settings -> Display & Monitor:
 
 ## 5. Verify the capture format
 
+Use the stable by-id path, not `/dev/video0`. UVC cards often expose a metadata
+node and the numbering can swap between boots:
+
 ```bash
+ls -l /dev/v4l/by-id/
 v4l2-ctl --list-devices
-v4l2-ctl -d /dev/video0 --list-formats-ext
+v4l2-ctl -d /dev/v4l/by-id/<your-card>-video-index0 --list-formats-ext
 ```
 
-You need `1920x1080` at `30` fps. `MJPG` is expected; `YUYV` is better if it
-does 1080p30.
+You need `1920x1080` at `30` fps. Prefer **YUYV/NV12** if the card offers it at
+1080p30: it removes MJPEG artifacts and decode latency. At 1080p30 uncompressed
+is only ~124 MB/s, well inside USB 3.0, so it is worth checking. `MJPG` is the
+usual fallback.
 
 If only 60 fps is listed, use the fallback in step 6.
 
@@ -177,7 +183,8 @@ rpm-ostree install v4l-utils
 The config is `../configs/mpv-lsfg.conf`. Minimal command:
 
 ```bash
-mpv av://v4l2:/dev/video0 --fs \
+CARD=/dev/v4l/by-id/<your-card>-video-index0
+mpv av://v4l2:$CARD --fs \
   --profile=low-latency \
   --untimed \
   --video-sync=desync \
@@ -200,7 +207,7 @@ Key points:
 If the card will not do 30 fps at 1080p, capture 60 and drop to 30 in mpv:
 
 ```bash
-mpv av://v4l2:/dev/video0 --fs \
+mpv av://v4l2:$CARD --fs \
   --profile=low-latency --untimed --video-sync=desync \
   --demuxer-lavf-o=video_size=1920x1080,framerate=60,input_format=mjpeg \
   --vf=fps=30:round=near \
@@ -210,18 +217,34 @@ mpv av://v4l2:/dev/video0 --fs \
 
 ## 7. Confirm 120
 
+**Do not trust MangoHud alone here.** MangoHud is a Vulkan layer too, and layer
+order is not guaranteed. If MangoHud loads *before* lsfg-vk, it sees only the
+app's 30 fps and reports **30 even when frame generation is working**. This is
+documented by lsfg-vk itself.
+
+Confirm in this order:
+
+1. The terminal where you launch mpv prints lsfg lines, for example:
+   `(lsfg-vk) [INFO]: Using profile with name 'mpv 4x 1080p120'` and
+   `Multiplier: 4`. That means the layer is active.
+2. The picture is visibly smoother than a 30 fps feed, and the monitor OSD
+   confirms 120 Hz.
+3. Only then use an overlay as a sanity check. If MangoHud says 30 while the
+   picture is clearly smooth, it is the layer-order false negative, not a
+   failure.
+
 ```bash
-MANGOHUD=1 mpv av://v4l2:/dev/video0 --fs ...
+# overlay, if you want a number (may under-report; see above)
+MANGOHUD=1 mpv av://v4l2:$CARD --fs ...
 ```
 
-- MangoHud FPS ~**120**: working.
-- ~**30**: lsfg is not active.
+- ~**120**: working.
 - ~**60**: multiplier 2, or the monitor is at 60 Hz.
 - ~**240** or tearing: you are capturing 60 and multiplying 4x.
+- ~**30** with a visibly smooth picture: MangoHud is above lsfg. Ignore it.
 
-MangoHud is itself a Vulkan layer. It is fine for measuring, but if frame
-generation refuses to start, launch once **without** `MANGOHUD=1` and without
-any other layers (VkBasalt, vkShade) before concluding lsfg is broken.
+Launch once **without** `MANGOHUD=1` and without any other layers (VkBasalt,
+vkShade) before concluding lsfg is broken.
 
 Check the layer is loaded:
 
@@ -309,8 +332,8 @@ artifacts and may look better even when 4x runs fine.
 - [ ] `lsfg-vk-cli validate` passes.
 - [ ] `vkcube` prints `(lsfg-vk)` lines and spins slower than normal.
 - [ ] `kscreen-doctor -o` shows 1920x1080@120.
-- [ ] `v4l2-ctl` shows 1080p30.
+- [ ] `v4l2-ctl` shows 1080p30 on the by-id node.
 - [ ] mpv without lsfg shows a stable 30 fps feed.
-- [ ] MangoHud shows ~120 with lsfg 4x.
+- [ ] The `(lsfg-vk)` lines appear, and the picture is visibly smoother.
 - [ ] 10 minutes of driving: no desync, no black frames, HUD readable.
 - [ ] You prefer it to 30 fps native. If not, use 2x/60 or passthrough.

@@ -58,11 +58,12 @@ Audio: **Stereo uncompressed**.
 
 ```bash
 v4l2-ctl --list-devices
-v4l2-ctl -d /dev/video0 --list-formats-ext
+ls -l /dev/v4l/by-id/
+v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext
 ```
 
 - [ ] `1920x1080` at **30 fps** exists.
-- [ ] Note the format: `MJPG` or `YUYV`.
+- [ ] Note the format: `MJPG`, or `YUYV` if offered (prefer it).
 - [ ] Audio source appears in `wpctl status`.
 
 Run `../scripts/check-capture.sh` for a one-shot report.
@@ -79,7 +80,8 @@ Run `../scripts/check-capture.sh` for a one-shot report.
 ## 7. mpv
 
 ```bash
-mpv av://v4l2:/dev/video0 --fs \
+CARD=/dev/v4l/by-id/<card>-video-index0
+mpv av://v4l2:$CARD --fs \
   --profile=low-latency --untimed --video-sync=desync \
   --demuxer-lavf-o=video_size=1920x1080,framerate=30,input_format=mjpeg \
   --vo=gpu-next --gpu-api=vulkan --hwdec=vaapi \
@@ -87,7 +89,10 @@ mpv av://v4l2:/dev/video0 --fs \
 ```
 
 - [ ] Picture appears fullscreen.
-- [ ] `MANGOHUD=1` shows ~**120** fps.
+- [ ] The terminal prints `(lsfg-vk) ... Multiplier: 4`.
+- [ ] The picture is visibly smoother than 30 fps.
+- [ ] `MANGOHUD=1` is only a sanity check: it can show 30 when it loads above
+      lsfg-vk. Do not treat that as failure.
 - [ ] Without lsfg (disable the profile), the same command shows ~30.
 
 If it shows 60, the display is 60 Hz or the multiplier is 2. If it shows 240,
