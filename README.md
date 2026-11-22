@@ -47,8 +47,12 @@ Checklist: `docs/03-checklist.md`.
   frames (33-66 ms), plus capture latency. Expect **80-140 ms** end to end.
 - The controller stays paired to the **Xbox**. The Legion only receives video.
 - 4x ghosts more than 2x, especially HUD text, foliage and fast pans.
-- The Z2 Go may not hold 1080p120 with 4x in heavy scenes. If not: 3x/90 with
-  VRR, or 2x/60.
+- The Z2 Go is stronger than it looks for this job: the base is only 30 fps, so
+  lsfg has ~33 ms per input frame. Measure with
+  `lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p` before assuming it
+  cannot. If it falls short: 3x/90 with VRR, or 2x/60.
+- Plug in and use a performance TDP. At 15 W the 680M clocks down and 4x can
+  collapse; at 28-40 W it has room.
 
 ## Review of the answer you pasted
 
@@ -91,7 +95,7 @@ The corrected, step-by-step version is `docs/02-bazzite-setup.md`.
 | Xbox Series S | GTA VI at ~1080p30 | 30 fps target |
 | Joyzzz capture card | HDMI -> USB UVC, 4K30 passthrough | Capture 1080p30 for 4x |
 | JSAUX 6-in-1 dock | USB-C hub, HDMI 2.1 4K120, 3x USB-A 3.0, 100 W PD | Use the Legion's USB4 port |
-| Legion Go S | Z2 Go / 680M-class, Bazzite | 1080p120 with 4x is the stretch |
+| Legion Go S | Z2 Go / 680M-class, Bazzite | 4x/120 likely; verify with the lsfg benchmark |
 | Monitor | 1080p120 HDR | Run SDR, 120 Hz, 100% scaling |
 
 Cabling:

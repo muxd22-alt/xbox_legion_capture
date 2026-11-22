@@ -30,7 +30,7 @@ No TV, no Xiaomi box, no Moonlight, no Sunshine, no network, no 4K.
 | Xbox Series S | Runs GTA VI at ~1080p30 | 30 fps target; HDMI 2.1 out |
 | Joyzzz capture card | HDMI -> USB UVC, 4K30 passthrough, 1080p60 capture | Capture at **1080p30** for the 4x path |
 | JSAUX 6-in-1 dock | USB-C hub, HDMI 2.1 4K120, 3x USB-A 3.0, 100 W PD | Plug into the Legion's **USB4** port |
-| Legion Go S | AMD Z2 Go, Radeon 680M-class, Bazzite | 1080p120 with 4x is the stretch goal |
+| Legion Go S | AMD Z2 Go, Radeon 680M (12 CU), Bazzite | 4x/120 is likely; benchmark to confirm |
 | Monitor | 1080p120 HDR | Run it **SDR, 120 Hz, 100% scaling** |
 
 ## The core math: 30 x 4 = 120

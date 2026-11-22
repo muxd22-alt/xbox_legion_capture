@@ -62,6 +62,12 @@ network streaming, 4K, HDR, Windows, Veyra. HDR stays off end to end.
    confirm the `(lsfg-vk)` lines and that the cube spins slower than normal.
    Pass: profile is selected and frames are generated.
 
+4b. Benchmark before tuning:
+   `lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p -t 10`
+   Base FPS is the input rate it can sustain. 50+ is comfortable, 33-40 is
+   tight, under 33 means 4x cannot keep up and we go to 3x. Run it plugged in on
+   the performance TDP profile, ideally with mpv playing in the background.
+
 5. mpv baseline with lsfg disabled: stable 30 fps, correct colours, no black
    frames. Pass: 30 fps for 2 minutes.
 
@@ -73,12 +79,15 @@ network streaming, 4K, HDR, Windows, Veyra. HDR stays off end to end.
    HUD readability, and whether I prefer it to 30 fps native.
 
 **Fallback ladder if 120 does not hold:**
-1. Raise flow_scale 0.5 -> 0.65 -> 0.75.
-2. Keep performance mode on, lower flow_scale back to 0.5.
-3. Multiplier 3 (90 fps) and enable VRR on the monitor.
-4. Capture 1600x900 or 1280x720, let mpv scale to 1080p.
-5. Multiplier 2 at 60 Hz.
-6. Use the capture card's HDMI passthrough (no software) as the baseline.
+1. Check TDP/clocks: plug in, performance profile. At 15 W the 680M cannot do
+   this; at 28-40 W it usually can.
+2. Keep flow_scale 0.5 + performance mode on.
+3. Raise flow_scale 0.5 -> 0.65 -> 0.75 only once it is stable.
+4. Multiplier 3 (90 fps) and enable VRR on the monitor. 90 is an exact multiple
+   of 30, but most 120 Hz panels have no 90 Hz mode.
+5. Capture 1600x900 or 1280x720, let mpv scale to 1080p.
+6. Multiplier 2 at 60 Hz.
+7. Use the capture card's HDMI passthrough (no software) as the baseline.
 
 **Troubleshooting notes:**
 - Always run `lsfg-vk-cli validate` and `healthcheck` before blaming mpv.

@@ -10,8 +10,10 @@ Only read this if the main path is not enough. The main path is
 - Windows 11 x64 + DirectX 12 only. The demo host is an RTX 5090.
 - It does capture -> dedupe -> frame gen -> upscale -> output in one app.
 - If you add a Windows partition to the Legion, Veyra can do 60 -> 30 -> 4x with
-  proper duplicate removal. That is cleaner than lsfg-vk for a 30 fps console.
-- On the 680M, expect 1080p60, not 120. The video's 120 is an RTX 5090.
+  proper duplicate removal. That is cleaner than lsfg-vk for a 30 fps console,
+  but Veyra's full pipeline (dedupe + frame gen + upscale) is heavier than
+  lsfg's frame gen alone. On the 680M, assume 1080p60 is realistic; 120 with
+  the whole pipeline is not. The video's 120 is an RTX 5090.
 
 ## Desktop GPU
 
@@ -59,15 +61,35 @@ Do not buy a "4K60 capture" stick at a low price; it is usually 4K30 or MJPEG.
 
 ## GPU reality
 
-The Z2 Go / Radeon 680M can do:
+The Z2 Go has a **full Radeon 680M: 12 RDNA2 CUs, up to ~2.2 GHz**, with
+LPDDR5X-6400 shared memory. It is not a cut-down 660M.
 
-- 1080p60 HEVC encode: yes.
-- 1080p120 frame gen at 4x: maybe, scene-dependent.
-- 1080p120 with 4x plus heavy capture decode: tight.
-- AV1 encode: no.
+The useful data point is lsfg-vk 2.0's own benchmark on a 680M: **2x at
+1280x800, 100% flow scale, FP16 on** took **3.30 ms per generated frame**
+(302 base fps). Scale that to 1080p (2.03x the pixels) and 4x (3 generated
+frames per input):
 
-There is no software trick that turns a 680M into a 5090. If 4x/120 does not
-hold, 3x/90 with VRR is the honest fallback.
+- ~6.7 ms per generated frame at 1080p
+- ~20 ms per input frame at 4x, 100% flow, no performance mode
+- budget at 30 fps input: 33.3 ms
+
+So generation fits with room to spare, and `flow_scale = 0.5` plus performance
+mode roughly halves it. The thing that can break 4x is not the model; it is
+**TDP and clocks** (15 W vs 28-40 W) and, to a lesser degree, MJPEG decode
+stealing CPU.
+
+What the 680M can do here:
+
+- 1080p30 MJPEG decode: yes, CPU or VCN.
+- 1080p120 frame gen at 4x from a 30 fps base: **likely yes**, benchmark to
+  confirm.
+- 1080p120 frame gen at 4x from a 60 fps base: no, and it would be wrong
+  anyway.
+- AV1 encode: no. HEVC encode: yes.
+
+There is no software trick that turns a 680M into a 5090, but this workload is
+much lighter than gaming at 120 fps because the source is only 30 fps. If 4x
+does not hold, fix TDP first, then try 3x/90 with VRR.
 
 ## HDR (later)
 

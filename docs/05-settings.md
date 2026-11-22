@@ -81,6 +81,7 @@ Run in order, one change at a time.
 
 | # | Test | Pass looks like |
 |---|---|---|
+| 0 | `lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p` | Base FPS well above 30 (ideally 50+) |
 | 1 | Xbox -> card passthrough -> monitor | 1080p60, no software, no lag |
 | 2 | Card USB -> Legion, mpv no lsfg | Stable 30 fps, correct colours |
 | 3 | mpv + lsfg 4x, flow 0.5, perf on | ~120 fps, playable |
@@ -88,6 +89,9 @@ Run in order, one change at a time.
 | 5 | lsfg 3x | ~90 fps, fewer artifacts |
 | 6 | lsfg 2x + monitor 60 Hz | ~60 fps, cleanest image |
 | 7 | 1600x900 capture + 4x | ~120 fps if 1080p was too heavy |
+
+Test 0 takes 10 seconds and tells you whether 4x is viable before you spend an
+evening tuning. Run it plugged in, on the performance TDP profile.
 
 Record the result of each. Do not tune two things at once.
 
@@ -112,6 +116,9 @@ v4l2-ctl -d /dev/video0 --list-formats-ext
 ~/.local/bin/lsfg-vk-cli validate
 ~/.local/bin/lsfg-vk-cli validate -p
 ~/.local/bin/lsfg-vk-cli healthcheck
+
+# can this GPU do 1080p 4x? (Base FPS should be well above 30)
+~/.local/bin/lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p -t 10
 
 # Vulkan layer
 ls ~/.local/share/vulkan/implicit_layer.d/ | grep -i lsfg

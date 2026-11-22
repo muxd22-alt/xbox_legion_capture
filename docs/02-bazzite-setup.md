@@ -239,20 +239,48 @@ rpm-ostree install vulkan-tools
 
 ## 8. Tune for the 680M
 
-Start at `flow_scale = 0.5`, `performance_mode = true`.
+The Z2 Go's Radeon 680M has 12 CUs and the base rate is only 30 fps, so lsfg
+gets ~33 ms per input frame. 4x is **likely to fit**, because the GPU is idle
+most of the time between console frames. Prove it with the built-in benchmark
+before changing anything:
+
+```bash
+lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p -t 10
+```
+
+Read **Base FPS** (how many input frames per second it can process):
+
+| Base FPS | Meaning |
+|---|---|
+| 60+ | 4x has plenty of headroom. Raise flow scale later. |
+| 40-60 | 4x should hold at 30 fps input. |
+| 33-40 | Tight. Keep flow 0.5 + performance mode. |
+| under 33 | Generation alone cannot keep up. Use 3x. |
+
+The benchmark is generation-only, so leave it some headroom. For a
+representative number, run mpv (or a 1080p30 video) in the background while it
+runs.
+
+Then tune in this order:
 
 1. Stable 120? Raise flow scale to 0.65, then 0.75. Higher looks better, costs
    more.
-2. Not stable? Keep flow 0.5 and performance mode on.
-3. Still not stable? Drop multiplier to **3** (90 fps) and enable VRR if the
-   monitor supports it. 90 with VRR looks much better than 90 without.
+2. Not stable? Keep flow 0.5 and performance mode on, and check TDP: plug in
+   and use a performance profile. At 15 W the 680M clocks down and 4x can
+   collapse.
+3. Still not stable? Drop multiplier to **3** (90 fps). 90 is an exact multiple
+   of 30, but most 120 Hz panels do not have a 90 Hz mode, so enable VRR if the
+   monitor supports it. 90 without VRR judders.
 4. Still not stable? Capture at **1600x900** or **1280x720** and let mpv scale
    to 1080p. LSFG cost scales with resolution.
 5. Last resort: **2x** (60 fps) with the monitor at 60 Hz. Smooth, low
    artifacts, no 120.
 
 4x means the GPU generates **90 frames per second** on top of decoding and
-presenting. The Z2 Go may not hold 120 in heavy scenes. Measure before assuming.
+presenting. That is the real cost, not the multiplier itself. The honest
+trade-off at 4x is quality: 30 fps base means large disocclusions, so expect
+halos around the car and smearing on HUD text during fast pans. 3x has fewer
+artifacts and may look better even when 4x runs fine.
 
 ## 9. Troubleshooting
 
