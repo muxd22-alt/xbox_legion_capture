@@ -25,7 +25,9 @@ already on the machine).
 
 **Non-goals - do not set these up:** TV, Xiaomi box, Sunshine, Moonlight,
 network streaming, 4K, HDR, Windows, Veyra, OptiScaler, ReShade, DLSS Enabler.
-Keep HDR off end to end.
+Keep HDR off end to end. Do not use VeyAmux's PlayStation Remote Play option;
+it is PS4/PS5 only and cannot connect to an Xbox. The Xbox path is the capture
+card.
 
 **Rules:**
 - One change at a time, then re-test.
@@ -54,7 +56,9 @@ Keep HDR off end to end.
    to look even. Fix this before anything else.
 
 3. Capture. Find the real capture node and confirm **1920x1080 @ 30 fps**.
-   Note MJPG vs YUYV/NV12. Prefer uncompressed at 30. Pass: 30 fps listed.
+   Note MJPG vs YUYV/NV12. Prefer uncompressed at 30. Keep the **Xbox at
+   1080p**; do not lower it to 720p. 720p is only a GPU fallback, not a
+   starting point. Pass: 30 fps listed.
 
 4. Lossless Scaling + lsfg-vk. Confirm the Steam **`lsfg-vk`** branch is
    installed, `ujust get-lsfg status` says `install`, and `lsfg-vk-cli

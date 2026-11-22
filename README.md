@@ -121,6 +121,9 @@ VRR is on the Legion's output, not the Xbox's.
   the Xbox already did the internal upscale. 1.5x/2x/3x above 1080p is
   supersampling, which costs GPU and gets scaled back down.
 - **Not 120 from 30.** 3x max. 90 is the goal here.
+- **Not an Xbox Remote Play client.** VeyAmux's Remote Play option is
+  PlayStation-only; the Xbox path is the capture card. The 720p/1080p demo
+  buttons are not a capture mode.
 - **Not a game mod.** It processes captured video, so there is no anti-cheat
   surface.
 - **Not HDR.** Keep HDR off end to end.

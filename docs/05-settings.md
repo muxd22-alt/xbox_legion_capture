@@ -24,10 +24,14 @@ output would just be downsampled by the card.
 | Setting | Value |
 |---|---|
 | Resolution | 1920x1080 |
-| Frame rate | **30** |
+| Frame rate | **30** (60 is fine; VeyAmux removes duplicates) |
 | Format | YUYV/NV12 if offered at 1080p30, else MJPEG |
 | Device path | `/dev/v4l/by-id/...`, not `/dev/videoN` |
 | Audio | Card USB audio, stereo |
+
+Keep the **Xbox at 1080p**. Do not set the console to 720p to help VeyAmux;
+that throws away detail before capture. 720p is a fallback for the Legion's GPU,
+not a default (see `01-signal-chain.md`).
 
 ## Monitor
 
@@ -118,6 +122,8 @@ Run in order, one change at a time.
 | 6 | Anti-flicker on | Calmer fences/foliage, still 90 |
 | 7 | 2x instead of 3x | 60 fps, lower latency, cleaner image |
 | 8 | 1.5x upscale | Slightly different sharpness; note the GPU cost |
+| 9 | 1080p60 capture + dedupe | Same 90, possibly a few ms less latency |
+| 10 | 720p capture + 1.5x upscale | 90 if 1080p was too heavy; softer image |
 
 Record the result of each. Do not tune two things at once.
 

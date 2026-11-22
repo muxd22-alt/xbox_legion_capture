@@ -95,6 +95,48 @@ v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext
   work is **noise reduction, anti-flicker and sharpening**, not enlargement.
 - VeyAmux is frame generation plus cleanup. It is not a detail-recovery model.
 
+## 1080p or 720p?
+
+Keep the Xbox at **1080p** and capture **1080p30**.
+
+- The card can do 1080p30, so resolution is not the bottleneck.
+- The Xbox's hardware upscaler is better than reconstructing a 720p capture in
+  software.
+- HUD text, the minimap and fine geometry stay sharp.
+- 3x/90 from a 30 fps base is within the 680M's budget. Measure before
+  downgrading.
+
+720p is a **fallback**, not the default. If 90 will not hold:
+
+1. Drop the cleanup cost first: upscaling off, noise reduction low,
+   anti-aliasing off.
+2. Then capture 1600x900 or 1280x720 and let VeyAmux upscale.
+3. 720p -> 1080p is exactly **1.5x**, which SGSR, FSR 1 and NIS handle cleanly,
+   and 3x at 720p is much cheaper than 3x at 1080p.
+4. Accept the softer image. No upscaler recovers detail that was never
+   captured.
+
+Do **not** set the Xbox to 720p just to help VeyAmux. That throws away detail
+before the capture, and some games also reduce their internal render resolution
+when the output is lowered.
+
+### 30 or 60 fps capture?
+
+If the card offers 1080p60, capturing 60 and letting VeyAmux remove duplicates
+can deliver each unique frame slightly sooner (one 60 Hz interval instead of one
+30 Hz interval), at the cost of more USB bandwidth and decode. Try both; 30 is
+simpler, 60 may shave a few milliseconds.
+
+## Remote Play is PlayStation-only
+
+VeyAmux's **PlayStation Remote Play** uses the chiaki-ng protocol and supports
+**PS5/PS4 only**. It cannot connect to an Xbox. The Xbox path is the capture
+card.
+
+The **720p/1080p at 30/60 buttons on the start screen are the built-in demo**
+(Abyssal Garden), not your console. Use them to test the Legion's upscaling and
+frame-generation headroom; they are not a capture mode.
+
 ## Latency reality
 
 | Stage | Typical |
