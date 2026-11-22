@@ -1,0 +1,3 @@
+# Keep shell scripts LF even if the repo is cloned on Windows.
+* text=auto
+*.sh text eol=lf
