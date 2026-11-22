@@ -8,30 +8,45 @@ picture cleanup and frame generation.
 Xbox Series S (1080p60 out, SDR)
   | HDMI
   v
-Joyzzz capture card (capture 1920x1080 @ 30 fps)
+Joyzzz capture card (capture 1920x1080 @ 60; VeyAmux removes the repeats)
   | USB 3.0
   v
 JSAUX dock -> Legion Go S (Bazzite)
-  | VeyAmux: noise reduction + sharpening + 3x via lsfg-vk
+  | VeyAmux: cleanup + 3x via lsfg-vk
   v
-1920x1080 monitor @ 120 Hz + VRR, showing 90 fps
+1920x1080 monitor at a fixed 90 Hz
 ```
 
 No TV, no Xiaomi box, no Moonlight, no Sunshine, no network, no 4K.
 
 ## The number
 
-**30 x 3 = 90.**
+**30 unique frames x 3 = 90.**
 
-GTA VI is a 30 fps game. The Xbox sends a 60 Hz signal with every frame twice.
-VeyAmux drops the repeated frames, then triples what is left through Lossless
-Scaling / `lsfg-vk`. 90 is an exact multiple of 30, so the cadence is even.
+GTA VI is a 30 fps game. The Xbox sends a 60 Hz signal with every picture
+twice. VeyAmux compares whole frames, drops the repeats, then triples the 30
+unique frames through Lossless Scaling / `lsfg-vk`.
 
-Your monitor runs **120 Hz with VRR**, so 90 fps is presented evenly instead of
-juddering 3:2. That is why VRR is part of the setup, not an optional extra.
+Two consequences decide the whole setup:
 
-**120 fps is not this path.** VeyAmux exposes 2x and 3x, not 4x. From a 30 fps
-game that is 60 or 90. This repo is built around VeyAmux and 90.
+1. **Capture at 60, not 30.** The 60 Hz signal carries the 30 fps game with
+   uneven 17/50 ms spacing. VeyAmux is built to remove those repeats. A 30 Hz
+   capture throws away every other frame blindly and can alias real frames
+   against the 17/50 ms pattern.
+2. **VRR must be off, and the display must be a fixed 90 Hz.** lsfg-vk 2 needs
+   a fixed refresh to space generated frames evenly; VeyAmux explicitly warns
+   when Adaptive Sync is on. 90 on a fixed 120 Hz panel is 3:2 and judders.
+
+If the monitor has no real 90 Hz mode, use **Fixed 2x at a fixed 60 Hz**
+(30 -> 60). Do not run 3x on 120 Hz.
+
+| Display mode | Frame gen | Output | Even? |
+|---|---|---|---|
+| **90 Hz fixed, VRR off** | **3x** | **90** | **Yes - target** |
+| 120 Hz fixed, VRR off | 3x | 90 | No, 3:2 judder |
+| 120 Hz + VRR | 3x | 90 | Not with lsfg; VRR must be off |
+| 60 Hz fixed, VRR off | 2x | 60 | Yes - fallback |
+| 120 Hz fixed, VRR off | 2x | 60 | Yes, exact 2:1 |
 
 ## Why VeyAmux
 
@@ -41,26 +56,32 @@ game that is 60 or 90. This repo is built around VeyAmux and 90.
 | Built for this | Developed and tested on Bazzite KDE with AMD graphics. |
 | Capture + audio | V4L2 video and the card's audio in one window. |
 | Picture cleanup | Noise reduction, anti-flicker, sharpening, AA, colour, dehaze. |
-| Duplicate removal | Finds repeated frames by comparing whole pictures, like Veyra. |
-| Guard rails | Warns about MJPEG, over-asking frame gen, and refresh mismatch. |
+| Duplicate removal | Compares whole pictures, so a 60 Hz capture becomes 30 unique frames. |
+| Guard rails | Warns about MJPEG, VRR, over-asking frame gen, and refresh mismatch. |
 | Diagnostics | Built-in demo, F3 frame-time overlay, "Check my setup". |
 
-The trade-off is the multiplier: **2x or 3x**. That is the 90 fps ceiling.
+The trade-off is the multiplier: **2x or 3x**. 3x gives 90 from 30; 4x is not
+exposed.
 
 ## Quick start
 
 1. **Xbox:** 1080p, 60 Hz, HDR off, VRR off, 8-bit, stereo uncompressed.
-2. **Monitor:** 1920x1080, **120 Hz, VRR/Adaptive Sync on**, HDR off, scaling
-   100%.
-3. **Capture:** 1080p30 on the stable `/dev/v4l/by-id/...` node. Prefer
-   YUYV/NV12 over MJPEG if both exist at 30.
+2. **Monitor:** 1920x1080 at a **fixed 90 Hz**, **VRR/Adaptive Sync: Never**,
+   HDR off, scaling 100%. Check `kscreen-doctor -o` for a 90 Hz mode first.
+3. **Capture:** 1080p**60** on the stable `/dev/v4l/by-id/...` node. Prefer
+   YUYV/NV12 if listed at 60, otherwise MJPEG. Use 30 only if 60 overloads USB
+   or decode.
 4. **Lossless Scaling:** own it on Steam, switch to the **`lsfg-vk`** beta
    branch.
-5. **lsfg-vk 2:** `ujust get-lsfg install`, or use VeyAmux's "Install lsfg-vk 2"
+5. **lsfg-vk 2:** `ujust get-lsfg install`, or VeyAmux's "Install lsfg-vk 2"
    button.
-6. **VeyAmux:** run the AppImage, pick the card, set 1080p30, frame generation
-   **Fixed 3x**, picture cleanup on. Confirm **"Active through lsfg-vk"**.
-7. **Play.** The info line should say `30 fps -> 90 fps (Lossless Scaling 3x)`.
+6. **VeyAmux:** capture card, 1080p60, frame generation **Fixed 3x**, **Even
+   out frame pacing on**, cleanup light. Confirm **"Active through lsfg-vk"**.
+7. **Play.** The info line should say `signal ... @ 60 fps` and
+   `30 fps -> 90 fps (Lossless Scaling 3x)`.
+
+If there is no 90 Hz mode: set the monitor to **60 Hz fixed**, frame generation
+**Fixed 2x**, and target a clean 60.
 
 Full steps: `docs/02-veyamux-setup.md`.
 Checklist: `docs/03-checklist.md`.
@@ -69,11 +90,11 @@ Checklist: `docs/03-checklist.md`.
 
 | Part | Role | Limit that matters |
 |---|---|---|
-| Xbox Series S | GTA VI at ~1080p30 | 30 fps target; HDMI 2.1 out |
-| Joyzzz capture card | HDMI -> USB UVC, 4K30 passthrough | Capture 1080p30 |
+| Xbox Series S | GTA VI at ~1080p30 | 30 fps target; 60 Hz output |
+| Joyzzz capture card | HDMI -> USB UVC, 4K30 passthrough | Capture 1080p60 |
 | JSAUX 6-in-1 dock | USB-C hub, HDMI 2.1, 3x USB-A 3.0, 100W PD | Plug into the Legion USB4 port |
-| Legion Go S | AMD Z2 Go, Radeon 680M (12 CU), Bazzite | 3x/90 is the target; plugged in, performance TDP |
-| Monitor | 1080p120 with VRR | 120 Hz + VRR, showing 90 fps |
+| Legion Go S | AMD Z2 Go, Radeon 680M (12 CU), Bazzite | 3x/90 is the target; performance TDP |
+| Monitor | 1080p with a 90 Hz mode | Fixed 90 Hz, VRR off |
 
 Cabling:
 
@@ -90,51 +111,49 @@ Cabling:
 
 1080p, 60 Hz, HDR off, VRR off, 8-bit, Standard colour, stereo uncompressed.
 
-Xbox VRR off is deliberate: the capture card needs a steady signal. The monitor's
-VRR is on the Legion's output, not the Xbox's.
+Xbox VRR off is deliberate: the capture card needs a steady signal.
 
 ### Capture
 
-1920x1080 @ 30, YUYV/NV12 if offered, otherwise MJPEG.
+1920x1080 @ **60**, YUYV/NV12 if offered, otherwise MJPEG. 30 is a fallback,
+not the starting point.
 
 ### Monitor
 
-1920x1080 @ 120 Hz, **VRR on**, SDR, 100% scaling. Verify with
-`kscreen-doctor -o`.
+1920x1080 @ **90 Hz fixed**, **VRR off**, SDR, 100% scaling. If there is no
+90 Hz mode, 1920x1080 @ 60 Hz fixed and 2x.
 
 ### VeyAmux
 
 | Setting | Value |
 |---|---|
-| Source | capture card, 1920x1080 @ 30 |
+| Source | capture card, 1920x1080 @ 60 |
 | Upscaling | Off/1:1 if offered; otherwise 1.5x at most |
 | Noise reduction | Spatial or Both, low/medium |
 | Anti-flicker | On |
 | Sharpness | light |
 | Frame generation | **Fixed 3x** (Lossless Scaling) |
-| Display | fullscreen, 120 Hz + VRR |
+| Even out frame pacing | **On** (~17 ms extra) |
+| Display | fullscreen, fixed 90 Hz, VRR off |
 | HDR | off |
 
 ## What VeyAmux is not
 
 - **Not a detail-recovery upscaler.** At 1080p -> 1080p it cleans and sharpens;
-  the Xbox already did the internal upscale. 1.5x/2x/3x above 1080p is
-  supersampling, which costs GPU and gets scaled back down.
+  the Xbox already did the internal upscale.
 - **Not 120 from 30.** 3x max. 90 is the goal here.
 - **Not an Xbox Remote Play client.** VeyAmux's Remote Play option is
   PlayStation-only; the Xbox path is the capture card. The 720p/1080p demo
   buttons are not a capture mode.
-- **Not a game mod.** It processes captured video, so there is no anti-cheat
-  surface.
-- **Not HDR.** Keep HDR off end to end.
+- **Not a VRR tool.** With lsfg frame generation, VRR stays off.
 
 ## Verify
 
 ```bash
-# display: 1920x1080 @ 120, VRR-capable
+# display: fixed 90 Hz, VRR off
 kscreen-doctor -o
 
-# capture formats on the stable node
+# capture formats on the stable node (60 preferred)
 ls -l /dev/v4l/by-id/
 v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext
 
@@ -150,17 +169,16 @@ tail -n 50 ~/.config/VeyAmux/lsfg-vk.log
 VeyAmux's info line should read like:
 
 ```
-≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×) · signal 1920×1080 ...
+≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×) · signal 1920×1080 @ 60 fps
 ```
 
-Pass: the display is 120 Hz with VRR, the info line says 3x, and motion is even
-while driving.
+Pass: display fixed at 90 Hz, VRR off, 3x active, motion even while driving.
 
 ## Repo map
 
 | File | What it is |
 |---|---|
-| `docs/01-signal-chain.md` | Hardware, cabling, capture formats, latency, why 3x/90. |
+| `docs/01-signal-chain.md` | Hardware, cabling, capture formats, why 60 capture and 90 Hz. |
 | `docs/02-veyamux-setup.md` | Install and configure VeyAmux end to end. |
 | `docs/03-checklist.md` | Home-day checklist with pass/fail steps. |
 | `docs/04-audio-controller.md` | Audio through VeyAmux, controller facts. |
@@ -184,6 +202,6 @@ while driving.
 - VeyAmux: https://github.com/8BiTw0LF/VeyAmux
 - VeyAmux releases: https://github.com/8BiTw0LF/VeyAmux/releases
 - lsfg-vk docs: https://lsfg-vk.dev/docs/
-- lsfg-vk installation: https://lsfg-vk.dev/docs/installation/
+- lsfg-vk pacing modes: https://lsfg-vk.dev/docs/configuration/pacing-modes/
 - Bazzite framegen recipe: https://github.com/ublue-os/bazzite/blob/main/system_files/desktop/shared/usr/share/ublue-os/just/87-bazzite-framegen.just
 - GTA VI 30 fps target: https://www.glitched.online/gta-vi-targets-30fps-on-consoles-with-ps5-pro-ray-tracing-enhancements

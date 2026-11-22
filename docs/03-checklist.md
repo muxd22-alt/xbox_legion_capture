@@ -1,7 +1,7 @@
 # Home-day checklist
 
-Goal: **90 fps in VeyAmux**, Xbox -> capture card -> Legion -> VeyAmux 3x ->
-1080p monitor at 120 Hz + VRR. No TV, no Moonlight, no network.
+Goal: **90 fps in VeyAmux**, Xbox -> capture card -> Legion -> VeyAmux
+dedupe + 3x -> fixed 90 Hz display, VRR off. No TV, no Moonlight, no network.
 
 ## 0. Bring
 
@@ -9,7 +9,7 @@ Goal: **90 fps in VeyAmux**, Xbox -> capture card -> Legion -> VeyAmux 3x ->
 - [ ] Joyzzz capture card + USB 3.0 cable.
 - [ ] JSAUX dock + Legion charger.
 - [ ] Legion Go S, Bazzite updated.
-- [ ] 1080p120 monitor + HDMI cable.
+- [ ] 1080p monitor with a 90 Hz mode + HDMI cable.
 - [ ] This repo on the Legion (or a USB stick).
 - [ ] Lossless Scaling owned on Steam.
 
@@ -31,7 +31,7 @@ fix cables/Xbox before touching Bazzite.
 - [ ] Dock HDMI -> monitor.
 - [ ] Remove the passthrough cable (or keep it for A/B comparison).
 
-Pass: Legion charges, monitor shows the desktop at 1920x1080@120.
+Pass: Legion charges, monitor shows the desktop.
 
 ## 3. Xbox settings
 
@@ -47,18 +47,23 @@ Settings -> General -> TV & display options -> Video fidelity & overscan:
 
 Audio: **Stereo uncompressed**.
 
-Xbox VRR stays off because the capture card needs a steady signal. The monitor's
-VRR is for the Legion's output.
+Xbox VRR stays off because the capture card needs a steady signal.
 
 ## 4. Monitor settings
 
-- [ ] `kscreen-doctor -o` shows **1920x1080@120**.
-- [ ] **VRR / Adaptive Sync: on** in KDE *and* in the monitor OSD.
+```bash
+kscreen-doctor -o
+```
+
+- [ ] A real **1920x1080@90** mode exists.
+- [ ] Selected **90 Hz**.
+- [ ] **Adaptive sync: Never** (KDE) and **VRR off** in the monitor OSD.
 - [ ] Scaling **100%**.
 - [ ] HDR **off**.
 - [ ] Monitor **Game / Overdrive** mode.
 
-90 fps needs VRR on a 120 Hz panel to avoid 3:2 judder.
+No 90 Hz mode? Stop and use **2x at 60 Hz** instead. Do not run 3x on 120 Hz;
+it will judder 3:2.
 
 ## 5. Capture card
 
@@ -68,7 +73,7 @@ ls -l /dev/v4l/by-id/
 v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext
 ```
 
-- [ ] `1920x1080` at **30 fps** exists.
+- [ ] `1920x1080` at **60 fps** exists.
 - [ ] Format noted: `MJPG`, or `YUYV/NV12` if offered (prefer it).
 - [ ] Audio source appears in `wpctl status`.
 
@@ -88,8 +93,8 @@ Run `../scripts/check-capture.sh` for a one-shot report.
 - [ ] Latest AppImage downloaded from the releases page.
 - [ ] `chmod +x`, run as your user (never `sudo`).
 - [ ] FUSE fallback if needed: `--appimage-extract-and-run`.
-- [ ] Start screen -> **Capture card**.
-- [ ] Card selected, 1920x1080, 30 fps.
+- [ ] Start screen -> **Capture card** (not Remote Play, not the demo).
+- [ ] Card selected, 1920x1080, **60 fps**.
 - [ ] Audio input selected, output selected, meter moving.
 
 ## 8. Picture
@@ -106,6 +111,7 @@ Menu **P**:
 
 - [ ] Method: **Lossless Scaling**.
 - [ ] Multiplier: **Fixed 3x**.
+- [ ] **Even out frame pacing: on** (about +17 ms).
 - [ ] Status: **"Active through lsfg-vk"**.
 - [ ] Info line: `≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×)`.
 
@@ -114,7 +120,7 @@ If it says 2x, you are at 60. If it says nothing, frame gen is not active.
 ## 10. Acceptance
 
 - [ ] Drive in GTA VI for 10 minutes: no black frames, no desync.
-- [ ] Motion is even, not alternating fast/slow (VRR working).
+- [ ] Motion is even, not alternating fast/slow.
 - [ ] HUD/minimap readable.
 - [ ] Controller still controls the Xbox directly.
 - [ ] You prefer 90 over 30 native. If not, use 2x/60.
@@ -122,6 +128,7 @@ If it says 2x, you are at 60. If it says nothing, frame gen is not active.
 ## 11. Rollback
 
 - [ ] Frame generation **Off** in VeyAmux (or start with `VEYAMUX_LSFG=0`).
+- [ ] Set the monitor back to 120 Hz and VRR on for desktop use if you want.
 - [ ] `ujust get-lsfg uninstall` removes the layer if needed.
 - [ ] Unplug USB and use the card's HDMI passthrough.
 - [ ] The Xbox still works straight into the monitor.

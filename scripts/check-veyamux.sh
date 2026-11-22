@@ -6,7 +6,7 @@ set -uo pipefail
 
 echo "== display =="
 if command -v kscreen-doctor >/dev/null 2>&1; then
-    kscreen-doctor -o | grep -E 'Output|enabled|connected|1920x1080|120|Adaptive|VRR' || true
+    kscreen-doctor -o | grep -E 'Output|enabled|connected|1920x1080|90|120|Adaptive|VRR' || true
 else
     echo "  kscreen-doctor not found (are you in a KDE session?)"
 fi
@@ -84,8 +84,9 @@ fi
 
 echo
 echo "== expected =="
-echo "  display: 1920x1080 @ 120 Hz, VRR/Adaptive Sync on"
-echo "  capture: 1920x1080 @ 30 fps on the by-id node"
+echo "  display: 1920x1080 @ 90 Hz fixed, VRR/Adaptive Sync OFF"
+echo "  capture: 1920x1080 @ 60 fps on the by-id node (30 is a fallback)"
 echo "  lsfg:    Lossless Scaling on the 'lsfg-vk' Steam branch"
-echo "  VeyAmux: frame generation Fixed 3x, status 'Active through lsfg-vk'"
-echo "  output:  30 fps -> 90 fps on a 120 Hz VRR display"
+echo "  VeyAmux: frame generation Fixed 3x + Even out frame pacing"
+echo "  status:  'Active through lsfg-vk'"
+echo "  output:  30 unique fps -> 90 fps on a 90 Hz display"

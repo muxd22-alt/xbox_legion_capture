@@ -1,6 +1,7 @@
 # VeyAmux setup
 
-Goal: **Xbox -> capture card -> VeyAmux -> 90 fps on a 120 Hz VRR monitor.**
+Goal: **Xbox -> capture card -> VeyAmux -> 90 fps on a fixed 90 Hz display,
+VRR off.**
 
 Do this in Desktop Mode on the Legion. One change at a time.
 
@@ -10,9 +11,12 @@ Do this in Desktop Mode on the Legion. One change at a time.
 - Joyzzz capture card and a USB 3.0 cable.
 - JSAUX dock, Legion charger, HDMI cable to the monitor.
 - Legion Go S on Bazzite, updated, plugged in.
-- Monitor set to **1920x1080 @ 120 Hz with VRR/Adaptive Sync on**.
+- Monitor with a **real 90 Hz mode** (check `kscreen-doctor -o`).
 - Lossless Scaling owned on Steam (only needed for its frame generation).
 - VeyAmux AppImage.
+
+If the monitor has no 90 Hz mode, the target becomes **2x at 60 Hz**. Read
+step 7 before starting.
 
 ## 1. Lossless Scaling
 
@@ -80,13 +84,14 @@ VEYAMUX_LSFG=0 ./VeyAmux-x86_64.AppImage
 
 ## 4. Capture source and audio
 
-On the start screen choose **Capture card**.
+On the start screen choose **Capture card**. Do not choose PlayStation Remote
+Play; that is PS4/PS5 only. The 720p/1080p demo buttons are the built-in demo,
+not a capture mode.
 
 - Select the **capture card**, not a metadata node.
-- Resolution **1920x1080**, frame rate **30** (or 60 if that is all the card
-  offers; VeyAmux removes duplicates).
-- Prefer **YUYV/NV12** if the card lists it at 1080p30. If it only has MJPEG,
-  VeyAmux will warn you when an uncompressed mode exists.
+- Resolution **1920x1080**, frame rate **60**.
+- Prefer **YUYV/NV12** if the card lists it at 60. MJPEG at 60 is fine.
+- Use **30** only if 60 overloads USB or decode.
 - **Sound:** pick the capture card's input in the Sound tab, and your speakers
   or headphones as the output. There is a sound meter and an audio delay
   control.
@@ -114,8 +119,8 @@ upscaling:
 
 Notes:
 
-- 2x/3x upscaling renders above 1080p and scales back down. It looks slightly
-  different and costs real GPU time that 3x frame generation needs.
+- 2x/3x upscaling renders above 1080p and scales back down. It costs real GPU
+  time that 3x frame generation needs.
 - Noise reduction before sharpening is the important order. It removes MJPEG
   blocking so sharpening does not amplify it.
 - Anti-flicker calms thin lines and foliage without delaying the whole frame.
@@ -127,8 +132,11 @@ In the **Frame generation** tab:
 
 1. Choose **Lossless Scaling** as the method.
 2. Set **Fixed 3x**.
-3. If the menu shows **Restart now**, press it.
-4. The status box must say **"Active through lsfg-vk"**.
+3. Turn **Even out frame pacing** **on**. Many 30 fps games present pictures
+   17/50 ms apart; this evens them to a steady rhythm first, at a cost of about
+   one refresh (~17 ms at 60 Hz).
+4. If the menu shows **Restart now**, press it.
+5. The status box must say **"Active through lsfg-vk"**.
 
 Do not choose the free **AMD FSR 3.1.6 2x** for this goal. It is 2x, not 3x.
 
@@ -136,36 +144,45 @@ VeyAmux writes its own profile at `~/.config/VeyAmux/lsfg-vk.toml` and leaves
 your other lsfg profiles alone. You do not need the lsfg UI or a hand-written
 profile.
 
-If there is an **even out frame pacing** toggle, enable it. It costs about one
-refresh of latency and makes 3x land evenly.
+## 7. Display: fixed 90 Hz, VRR off
 
-## 7. Display: 120 Hz + VRR
+`lsfg-vk` 2 needs a fixed refresh. VeyAmux warns when Adaptive Sync is on.
 
 In KDE and in the monitor's OSD:
 
 - Resolution **1920x1080**
-- Refresh **120 Hz**
-- **VRR / Adaptive Sync / FreeSync: on**
+- Refresh **90 Hz** (a real 90 Hz mode, not 120 with VRR)
+- **VRR / Adaptive Sync / FreeSync: off**
 - Scaling **100%**
 - HDR **off**
 - Game/Overdrive picture mode
 
-90 fps on 120 Hz only looks even with VRR. Check that VRR is actually active;
-some monitors require it in the OSD as well as in KDE.
+Check the mode list first:
 
 ```bash
 kscreen-doctor -o
 ```
 
-You want the monitor output enabled at `1920x1080@120`, with adaptive sync on.
+You want the monitor output enabled at `1920x1080@90`, with adaptive sync off.
+
+### If there is no 90 Hz mode
+
+Do not run 3x on 120 Hz; that is 3:2 and judders.
+
+- Set the monitor to **60 Hz fixed**, VRR off.
+- Set frame generation to **Fixed 2x**.
+- Target a clean **60 fps**.
+
+A 120 Hz fixed mode with 2x (60 fps) is also an exact 2:1, but 60 Hz usually
+has lower latency. Either is even; 60 Hz is the simpler choice.
 
 ## 8. Confirm 90
 
 - VeyAmux's info line should read like
-  `≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×)`.
+  `≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×) · signal 1920×1080 @ 60 fps`.
 - **F3** opens the frame-time overlay. Frame times should be steady, not
   alternating long/short.
-- The monitor OSD should show 120 Hz with VRR active.
+- The monitor OSD should show **90 Hz** with VRR off.
 - The picture should be visibly smoother than 30 fps while driving.
 
 Check the log if something is off:
@@ -180,8 +197,8 @@ VeyAmux's info line, the F3 overlay and the monitor OSD first.
 
 ## 9. Tune for the 680M
 
-The Z2 Go has a full 12-CU Radeon 680M. At a 30 fps base there is real headroom,
-but 3x still means generating **60 extra frames per second**.
+The Z2 Go has a full 12-CU Radeon 680M. At 30 unique frames per second there is
+real headroom, but 3x still means generating **60 extra frames per second**.
 
 Order:
 
@@ -189,12 +206,11 @@ Order:
    can collapse. 28-40 W is the useful range.
 2. Keep **noise reduction light** and **upscaling off/1x**. These are the first
    costs to cut.
-3. If frame times are uneven, enable **even out frame pacing**.
-4. If 90 still will not hold, switch frame generation to **Fixed 2x** and set
-   the monitor to 60 Hz. You lose 90 but gain the lowest latency and the
-   cleanest image.
-5. If the card is sending MJPEG and offers YUYV/NV12 at 1080p30, switch the
-   capture format. That frees CPU and removes blocking.
+3. If frame times are uneven, confirm **Even out frame pacing** is on.
+4. If 90 still will not hold, switch frame generation to **Fixed 2x**, set the
+   monitor to **60 Hz**, and target 60.
+5. If the card is sending MJPEG and offers YUYV/NV12 at 1080p60, switch the
+   format. That frees CPU and removes blocking.
 
 Do not expect 4x/120 from VeyAmux. It exposes 2x/3x only.
 
@@ -203,9 +219,10 @@ Do not expect 4x/120 from VeyAmux. It exposes 2x/3x only.
 - [ ] Lossless Scaling is on the `lsfg-vk` Steam branch.
 - [ ] `lsfg-vk-cli healthcheck` reports no issues.
 - [ ] VeyAmux starts and sees the capture card.
-- [ ] Capture is 1920x1080 at 30 fps on the by-id node.
-- [ ] Monitor is 1920x1080@120 with VRR active.
+- [ ] Capture is 1920x1080 at 60 fps on the by-id node.
+- [ ] Monitor is at a fixed 1920x1080@90 with VRR off.
 - [ ] Frame generation status says **"Active through lsfg-vk"**.
+- [ ] Even out frame pacing is on.
 - [ ] VeyAmux info line says `30 fps -> 90 fps (Lossless Scaling 3×)`.
 - [ ] 10 minutes of driving: even motion, no black frames, readable HUD.
 - [ ] You prefer it to 30 fps native. If not, use 2x/60 or passthrough.

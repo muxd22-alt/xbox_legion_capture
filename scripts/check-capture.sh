@@ -42,7 +42,8 @@ fi
 
 echo
 echo "== expected =="
-echo "  1920x1080 @ 30 fps for the lsfg 4x path (60 also fine, then use --vf=fps=30)."
+echo "  1920x1080 @ 60 fps preferred: VeyAmux removes the duplicate frames."
+echo "  30 fps is a fallback if 60 overloads USB or decode."
 echo "  Prefer the /dev/v4l/by-id/... path: /dev/videoN can swap between boots."
-echo "  MJPG is expected; YUYV/NV12 is better if offered at 30."
-echo "  If only 30 is missing, check the Xbox output setting and the HDMI cable."
+echo "  MJPG is expected at 60; YUYV/NV12 is better if offered."
+echo "  If 60 is missing, check the Xbox output setting and the HDMI/USB 3.0 link."
