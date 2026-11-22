@@ -50,23 +50,39 @@ Checklist: `docs/03-checklist.md`.
 - The Z2 Go may not hold 1080p120 with 4x in heavy scenes. If not: 3x/90 with
   VRR, or 2x/60.
 
-## Tooling check
+## Review of the answer you pasted
 
-The answer you pasted is broadly right. Applied to this setup:
+Verdict: **the tool identification is correct, the setup advice is incomplete.**
+It names the right projects but does not tell you the one thing that decides
+whether this works: the input must be **30 fps** and the display must actually
+be **120 Hz**.
 
-| Tool | Verdict |
+What it got right:
+
+- `lsfg-vk` is the correct tool. It is a Vulkan implicit layer, so it hooks any
+  Vulkan app, including `mpv` with `--gpu-api=vulkan`.
+- Lossless Scaling must be owned on Steam and switched to the **`lsfg-vk`**
+  branch; lsfg-vk loads `Lossless.dll` from it.
+- `ujust get-lsfg` is the correct Bazzite install path (it installs V2 into
+  `~/.local`).
+- `decky-lsfg-vk` is optional and Game Mode oriented, so it is not needed here.
+- `Decky-Framegen` / OptiScaler are for injecting FSR/XeSS into PC games. They
+  do not touch a UVC capture stream, so they are irrelevant.
+- Veyra is Windows 11 + DX12 only. Not usable on Bazzite.
+
+What it got wrong or left out:
+
+| Gap | Why it matters here |
 |---|---|
-| **lsfg-vk** (PancakeTAS / lsfg-vk.dev) | **Correct tool.** Vulkan layer, hooks mpv, 4x from 30. |
-| **Bazzite `ujust get-lsfg`** | **Correct install path.** Installs LSFG-VK V2 into `~/.local`. |
-| **decky-lsfg-vk** | Optional. Game Mode plugin; not needed for Desktop Mode mpv. |
-| **Decky-Framegen / OptiScaler** | Not relevant. PC-game injection, not a capture feed. |
-| **Veyra** | Windows 11 + DX12 only. Not usable on Bazzite. |
-| **OBS VkCapture** | Works as a preview, but heavier than mpv. Fallback only. |
+| It does not mention the 30 -> 4x -> 120 math | `lsfg-vk` does not deduplicate. Capturing 60 and using 2x gives 120 images with 30 Hz of motion. |
+| It says lsfg-vk is on `github.com/PancakeTAS/lsfg-vk` | That repo is archived and only points to **lsfg-vk.dev**. The docs, CLI and builds moved. |
+| It does not mention `active_in` | The profile only activates for a matching binary. You need `active_in = "mpv"` (or `LSFGVK_PROFILE=...`). |
+| It does not mention Flatpak | A Flatpak `mpv` cannot see a layer installed in `~/.local`. Use native mpv or install the layer into the runtime. |
+| It does not mention the CLI checks | `lsfg-vk-cli validate`, `validate -p` and `healthcheck` are how you prove the config and install are sane. |
+| It does not mention Wayland/fullscreen quirks | With `pacing_mode = "vsync"`, some Wayland fullscreen apps need a windowed test first. |
+| It calls frame gen a free win | 4x adds ghosting and roughly one to two 30 fps frames of latency. It is not 120 Hz simulation. |
 
-Key detail from the Bazzite recipe: `ujust get-lsfg` downloads LSFG-VK V2 from
-`builds.lsfg-vk.dev` and installs the layer, CLI and UI under `~/.local`.
-Lossless Scaling must be installed through Steam and switched to the `lsfg-vk`
-beta branch.
+The corrected, step-by-step version is `docs/02-bazzite-setup.md`.
 
 ## Hardware
 
@@ -147,11 +163,17 @@ MANGOHUD=1 mpv av://v4l2:/dev/video0 --fs \
 | `configs/mpv-lsfg.conf` | mpv config for 1080p30 -> 4x -> 120. |
 | `scripts/check-capture.sh` | Lists V4L2 devices, formats and audio sources. |
 | `scripts/check-lsfg.sh` | Checks display mode, lsfg install, config validity and the Vulkan layer. |
+| `AGENT-PROMPT.md` | Copy-paste briefing for the agent at the machine. |
 
 ## Sources
 
-- lsfg-vk: https://lsfg-vk.dev/
-- lsfg-vk configuration: https://lsfg-vk.dev/docs/configuration
+- lsfg-vk docs: https://lsfg-vk.dev/docs/
+- lsfg-vk installation: https://lsfg-vk.dev/docs/installation/
+- lsfg-vk configuration: https://lsfg-vk.dev/docs/configuration/
+- lsfg-vk configuration options: https://lsfg-vk.dev/docs/configuration/configuration-options/
+- lsfg-vk pacing modes: https://lsfg-vk.dev/docs/configuration/pacing-modes/
+- lsfg-vk CLI (validate/healthcheck): https://lsfg-vk.dev/docs/cli/validation/
+- lsfg-vk troubleshooting: https://lsfg-vk.dev/docs/troubleshooting/basic-troubleshooting-steps/
 - lsfg-vk 2.0 release notes: https://www.gamingonlinux.com/2026/09/lossless-scalings-frame-generation-for-linux-lsfg-vk-2-0-is-out-now
 - Bazzite framegen recipe: https://github.com/ublue-os/bazzite/blob/main/system_files/desktop/shared/usr/share/ublue-os/just/87-bazzite-framegen.just
 - decky-lsfg-vk: https://github.com/xXJSONDeruloXx/decky-lsfg-vk
