@@ -15,6 +15,7 @@ D3D device, no depth buffer and no motion vectors to hook.
 | ReShade | Injects into a game's D3D/OpenGL/Vulkan device, often reading the game's depth buffer | No game device; depth-based effects have no depth input |
 | DLSS Enabler | Drop-in bundle of OptiScaler + FSR frame gen + SSGI for game folders | Same problem: there is no game folder to drop it into |
 | Gamescope FSR/NIS | Compositor-level upscaling of a game's swapchain | You are not running `mpv` inside Gamescope |
+| FSR 4.1.2 Lite (driver or OptiScaler) | A game's FSR 3.1/4 calls, motion vectors, jitter and depth | No game on the Legion, and the Z2 Go is not on AMD's official list (Z2 Extreme and Z2 A are) |
 | "DLSS 5 Linux ports" / leaked runtimes | Prebuilt closed binaries injected into Proton | Not applicable, and installing "leaked" runtimes is a malware and stability risk. Do not. |
 
 `WINEDLLOVERRIDES="dxgi=n,b"` is a Proton game launch option. It does nothing
@@ -24,6 +25,12 @@ There is also a physics problem: DLSS/FSR 2+/XeSS are **temporal** upscalers.
 They need motion vectors, jitter and depth from the game engine. A capture card
 delivers a finished 2D image. No shader can reconstruct that data. Only
 **spatial** filters (CAS, FSR 1, sharpen) are possible.
+
+AMD's FSR 4.1.2 lightweight INT8 model (players call it "FSR 4.1.2 Lite") is in
+the same category: it is a game-side ML upscaler, not a video filter. It also is
+not officially supported on the **Z2 Go** in the Legion Go S. AMD's list covers
+Ryzen AI 9 300/400, Ryzen AI Z2 Extreme, Z2 Extreme and Z2 A, plus the full
+INT8 model on RX 6000/7000 and Ryzen AI Max. Z2 Go and the plain Z2 are absent.
 
 ## What is safe and useful
 
