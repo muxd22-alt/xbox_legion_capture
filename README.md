@@ -131,6 +131,13 @@ FP16 on. Config: `configs/lsfg-vk-120.toml`.
 
 1920x1080 @ 120 Hz, SDR, 100% scaling. Verify with `kscreen-doctor -o`.
 
+### Optional post-processing
+
+Not the OptiScaler/ReShade stack from PC-game guides: those hook a game's
+renderer, and there is no game here. Use mpv's own shader chain instead, after
+120 is stable. CAS 1.2 for sharpening, `deband=yes` for MJPEG banding. Details:
+`docs/07-post-processing.md`.
+
 ## Verify
 
 ```bash
@@ -163,6 +170,7 @@ MANGOHUD=1 mpv av://v4l2:/dev/video0 --fs \
 | `docs/04-audio-controller.md` | Audio loopback and controller facts. |
 | `docs/05-settings.md` | Xbox / capture / monitor / lsfg / mpv settings and test matrix. |
 | `docs/06-alternatives.md` | Veyra, desktop GPU, Decky, OBS, capture card upgrades. |
+| `docs/07-post-processing.md` | Safe mpv shader chain (CAS/FSR1/deband); why OptiScaler/ReShade do not apply. |
 | `configs/lsfg-vk-120.toml` | lsfg-vk profile: multiplier 4, 1080p120. |
 | `configs/mpv-lsfg.conf` | mpv config for 1080p30 -> 4x -> 120. |
 | `scripts/check-capture.sh` | Lists V4L2 devices, formats and audio sources. |

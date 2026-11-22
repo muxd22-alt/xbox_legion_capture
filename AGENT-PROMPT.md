@@ -78,6 +78,11 @@ network streaming, 4K, HDR, Windows, Veyra. HDR stays off end to end.
 7. Soak test: 10 minutes of GTA VI driving. Check for desync, black frames,
    HUD readability, and whether I prefer it to 30 fps native.
 
+8. Optional, only after 120 is stable: at most add mpv's CAS shader or
+   `deband=yes` (see docs/07-post-processing.md). Do not install OptiScaler,
+   ReShade, DLSS Enabler, vkBasalt, or any "DLSS 5" runtime; there is no game
+   to hook, and stacking Vulkan layers breaks lsfg pacing.
+
 **Fallback ladder if 120 does not hold:**
 1. Check TDP/clocks: plug in, performance profile. At 15 W the 680M cannot do
    this; at 28-40 W it usually can.
