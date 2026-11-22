@@ -5,117 +5,111 @@ with the real hardware. It assumes the agent can run commands on the Legion.
 
 ---
 
-You are setting up a local console-capture frame-generation rig on a Legion Go S
+You are setting up a console-capture frame-generation rig on a Legion Go S
 running Bazzite. Work from the repo at
 https://github.com/muxd22-alt/xbox_legion_capture (clone it if it is not
 already on the machine).
 
 **Goal:** Xbox Series S -> Joyzzz USB capture card -> Legion Go S (Bazzite) ->
-`mpv` + `lsfg-vk` -> **1920x1080 @ 120 Hz, SDR, 1:1** on an external monitor.
+**VeyAmux** -> **90 fps** on a 1080p monitor running **120 Hz with VRR**.
 
-**The one number:** capture **30 fps**, lsfg-vk multiplier **4**, display
-**120 Hz**. `30 x 4 = 120`. lsfg-vk does not remove duplicate frames, so do not
-capture 60 and use 2x.
+**The number:** capture 30 fps, VeyAmux frame generation **3x**, display 120 Hz
++ VRR. `30 x 3 = 90`. Do not chase 120; VeyAmux exposes 2x/3x only.
 
 **Hardware:**
 - Xbox Series S, controller paired to the Xbox.
-- Joyzzz capture card: HDMI in, USB 3.0 out, 4K30 passthrough, 1080p60 capture.
+- Joyzzz capture card: HDMI in, USB 3.0 out, 1080p60 capture.
 - JSAUX 6-in-1 dock: HDMI 2.1, 3x USB-A 3.0, 100W PD.
-- Legion Go S: AMD Z2 Go / Radeon 680M, Bazzite, KDE Plasma.
-- External 1080p120 monitor.
+- Legion Go S: AMD Z2 Go / Radeon 680M (12 CU), Bazzite, KDE Plasma.
+- 1080p120 monitor with VRR.
 
-**Non-goals — do not set these up:** TV, Xiaomi box, Sunshine, Moonlight,
-network streaming, 4K, HDR, Windows, Veyra. HDR stays off end to end.
-
-**Read first:** `README.md`, `docs/02-bazzite-setup.md`, `docs/03-checklist.md`,
-`docs/05-settings.md`.
+**Non-goals - do not set these up:** TV, Xiaomi box, Sunshine, Moonlight,
+network streaming, 4K, HDR, Windows, Veyra, OptiScaler, ReShade, DLSS Enabler.
+Keep HDR off end to end.
 
 **Rules:**
-- Make one change at a time and re-test.
-- Prefer reversible changes. Do not uninstall anything or edit files outside
-  `~/.config`, `~/.local`, and the repo without asking me.
-- Ask before `rpm-ostree install` (it needs a reboot) or any Xbox setting change
-  you cannot verify yourself.
-- Do not buy or install Lossless Scaling; I already own it. It must be on the
-  Steam `lsfg-vk` branch.
-- I cannot see the screen through you, so tell me exactly what to look at when
-  a visual check is needed.
+- One change at a time, then re-test.
+- Prefer reversible changes. Do not uninstall anything or edit outside
+  `~/.config`, `~/.local` and this repo without asking me.
+- Ask before `rpm-ostree install` (it needs a reboot) or any Xbox change you
+  cannot verify yourself.
+- Do not buy or install Lossless Scaling; I own it. It must be on the Steam
+  `lsfg-vk` beta branch.
+- Do not run the VeyAmux AppImage with `sudo`.
+- I cannot see the screen through you. Tell me exactly what to look at when a
+  visual check is needed.
 
 **Do this in order, and stop at the first failure:**
 
-1. Collect facts and show me the output:
-   `bazzite-version`, `plasmashell --version`, `mpv --version`,
-   `kscreen-doctor -o`, `ls -l /dev/v4l/by-id/`, `v4l2-ctl --list-devices`,
+1. Collect facts and show output:
+   `bazzite-version`, `plasmashell --version`, `kscreen-doctor -o`,
+   `ls -l /dev/v4l/by-id/`, `v4l2-ctl --list-devices`,
    `v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext`,
-   `wpctl status`, `ujust get-lsfg status`, `lsfg-vk-cli validate`,
-   `lsfg-vk-cli healthcheck`. Use the stable by-id node, not `/dev/video0`.
+   `wpctl status`, `ujust get-lsfg status`, `lsfg-vk-cli healthcheck`,
+   `lsfg-vk-cli validate`, and whether Lossless Scaling is on the `lsfg-vk`
+   branch. Use the by-id node, not `/dev/video0`.
 
-2. Display. Confirm the external output is **1920x1080@120**, scaling 100%,
-   HDR off. If it is 60 Hz, fix it before anything else. Pass: `kscreen-doctor`
-   shows 120.
+2. Display. Confirm the external output is **1920x1080 @ 120 Hz** with
+   **VRR/Adaptive Sync on**, scaling 100%, HDR off. VRR is required for 90 fps
+   to look even. Fix this before anything else.
 
-3. Capture. Find the real capture node (UVC cards often expose a metadata node
-   too). Confirm **1920x1080 @ 30 fps** exists. Note MJPG vs YUYV. Pass: 30 fps
-   listed.
+3. Capture. Find the real capture node and confirm **1920x1080 @ 30 fps**.
+   Note MJPG vs YUYV/NV12. Prefer uncompressed at 30. Pass: 30 fps listed.
 
-4. lsfg-vk. Profile must be active for `mpv`, multiplier 4, flow_scale 0.5,
-   performance_mode true, pacing_mode vsync, allow_fp16 true. Run `vkcube` and
-   confirm the `(lsfg-vk)` lines and that the cube spins slower than normal.
-   Pass: profile is selected and frames are generated.
+4. Lossless Scaling + lsfg-vk. Confirm the Steam **`lsfg-vk`** branch is
+   installed, `ujust get-lsfg status` says `install`, and `lsfg-vk-cli
+   healthcheck` reports no issues.
 
-4b. Benchmark before tuning:
-   `lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p -t 10`
-   Base FPS is the input rate it can sustain. 50+ is comfortable, 33-40 is
-   tight, under 33 means 4x cannot keep up and we go to 3x. Run it plugged in on
-   the performance TDP profile, ideally with mpv playing in the background.
+5. VeyAmux. Download the latest AppImage from the project's releases, `chmod
+   +x`, run as my user. If FUSE fails, use `--appimage-extract-and-run`. Do not
+   use sudo.
 
-5. mpv baseline with lsfg disabled: stable 30 fps, correct colours, no black
-   frames. Pass: 30 fps for 2 minutes.
+6. Source and audio. In VeyAmux choose the capture card, 1920x1080 @ 30, the
+   best format offered, and the card's audio input plus the correct output.
+   Confirm the sound meter moves.
 
-6. mpv with lsfg enabled. First confirm from the terminal that the
-   `(lsfg-vk)` profile lines appear, and that the picture is visibly smoother.
-   MangoHud may report 30 even when frame gen works, because it can load before
-   lsfg-vk in the layer chain; do not use it as the only check. If frame gen
-   does not start, re-test without MangoHud and without other Vulkan layers.
-   Pass: visibly 120-ish and playable.
+7. Picture. Upscaling off/1:1 (1.5x max), noise reduction light, anti-flicker
+   on, sharpness light, HDR off. Do not stack 2x/3x upscaling on top of 3x
+   frame generation before measuring.
 
-7. Soak test: 10 minutes of GTA VI driving. Check for desync, black frames,
-   HUD readability, and whether I prefer it to 30 fps native.
+8. Frame generation. Method Lossless Scaling, **Fixed 3x**. Status must say
+   **"Active through lsfg-vk"**. Info line should read
+   `≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×)`. If it says 60, the
+   multiplier is 2x.
 
-8. Optional, only after 120 is stable: at most add mpv's CAS shader or
-   `deband=yes` (see docs/07-post-processing.md). Do not install OptiScaler,
-   ReShade, DLSS Enabler, vkBasalt, or any "DLSS 5" runtime; there is no game
-   to hook, and stacking Vulkan layers breaks lsfg pacing.
+9. Verify motion. F3 frame-time overlay should be steady, not alternating.
+   Monitor OSD should show 120 Hz with VRR active. The picture should be
+   visibly smoother than 30 fps. If an overlay reports 30, remember it may load
+   above lsfg-vk; trust VeyAmux first.
 
-9. Optional experiment: VeyAmux (docs/08-new-tools-2026-11.md) is a new
-   Bazzite-tested capture front-end, but its frame gen caps at 3x, so 30 fps
-   becomes 90, not 120. Compare it as a picture-quality alternative; do not
-   replace the mpv 4x/120 path unless I prefer 90 with fewer artefacts.
+10. Soak test: 10 minutes of GTA VI driving. Check for uneven motion, black
+    frames, HUD readability, audio sync, and whether I prefer it to 30 fps
+    native.
 
-**Fallback ladder if 120 does not hold:**
-1. Check TDP/clocks: plug in, performance profile. At 15 W the 680M cannot do
-   this; at 28-40 W it usually can.
-2. Keep flow_scale 0.5 + performance mode on.
-3. Raise flow_scale 0.5 -> 0.65 -> 0.75 only once it is stable.
-4. Multiplier 3 (90 fps) and enable VRR on the monitor. 90 is an exact multiple
-   of 30, but most 120 Hz panels have no 90 Hz mode.
-5. Capture 1600x900 or 1280x720, let mpv scale to 1080p.
-6. Multiplier 2 at 60 Hz.
-7. Use the capture card's HDMI passthrough (no software) as the baseline.
+**Fallback ladder if 90 does not hold:**
+1. Check TDP: plugged in, performance profile, 28-40 W. At 15 W the 680M
+   clocks down and 3x can collapse.
+2. Upscaling off, noise reduction light, anti-aliasing off.
+3. Enable "even out frame pacing" if offered.
+4. Confirm VRR is actually active in KDE and the monitor OSD.
+5. Switch to **Fixed 2x** and set the monitor to 60 Hz. Clean, low-latency.
+6. Use the capture card's HDMI passthrough as the baseline.
 
 **Troubleshooting notes:**
-- Always run `lsfg-vk-cli validate` and `healthcheck` before blaming mpv.
-- Confirm the layer loads with `VK_LOADER_DEBUG=layer mpv ...` and look for
-  `VK_LAYER_LSFGVK_frame_generation`.
-- A Flatpak mpv will not see the layer. Use native mpv.
-- `--gpu-api=vulkan` is mandatory.
-- If Wayland fullscreen breaks pacing, test windowed once.
-- MJPEG + `--hwdec=vaapi` can black-screen; try `--hwdec=no`.
-- The card's audio is a separate PipeWire source; mpv's v4l2 input is video
-  only. Use `pw-link` or a loopback.
+- `The specified shader DLL does not exist` or `Only Lossless.dll was found`
+  means Steam is still on the normal branch.
+- `lsfg-vk is not installed` -> VeyAmux's install button or
+  `ujust get-lsfg install`.
+- `LSFGVK_*` env vars are ignored unless `LSFGVK_ENV=1`.
+- Log: `~/.config/VeyAmux/lsfg-vk.log`.
+- MJPEG warning -> switch to YUYV/NV12 if the card offers it at 1080p30.
+- The card's audio is separate; use VeyAmux's Sound tab.
+- If the AppImage will not start, try `--appimage-extract-and-run` before
+  changing anything else.
 
 **Report back with:** the exact commands run, their output, the final
-resolution/refresh, measured fps, and which fallback (if any) we landed on.
-Write the result into a new file `RESULTS.md` in the repo, then stop.
+resolution/refresh/VRR state, the VeyAmux info line, measured frame times, and
+which fallback (if any) we landed on. Write the result into a new file
+`RESULTS.md` in the repo, then stop.
 
 ---

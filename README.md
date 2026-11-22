@@ -1,103 +1,79 @@
-# Xbox Series S -> Legion Go S -> 1080p120 monitor
+# Xbox Series S -> Legion Go S -> 90 fps with VeyAmux
 
-Using a capture card and **lsfg-vk** to play a 30 fps console game at 120 fps on
-a 1080p120 monitor.
+Play GTA VI from an Xbox Series S at a smooth **90 fps on a 1080p monitor**,
+using a capture card, a Legion Go S running Bazzite, and **VeyAmux** for
+picture cleanup and frame generation.
 
 ```
 Xbox Series S (1080p60 out, SDR)
-  -> Joyzzz capture card (capture 1080p30)
-  -> JSAUX dock -> Legion Go S (Bazzite)
-  -> mpv (Vulkan) + lsfg-vk 4x
-  -> 1920x1080 @ 120 Hz monitor (SDR, 1:1)
+  | HDMI
+  v
+Joyzzz capture card (capture 1920x1080 @ 30 fps)
+  | USB 3.0
+  v
+JSAUX dock -> Legion Go S (Bazzite)
+  | VeyAmux: noise reduction + sharpening + 3x via lsfg-vk
+  v
+1920x1080 monitor @ 120 Hz + VRR, showing 90 fps
 ```
 
 No TV, no Xiaomi box, no Moonlight, no Sunshine, no network, no 4K.
 
-## The one number
+## The number
 
-**30 x 4 = 120.**
+**30 x 3 = 90.**
 
-GTA VI is a 30 fps game. The Xbox sends 60 Hz with every frame duplicated.
-lsfg-vk has no duplicate-frame removal, so:
+GTA VI is a 30 fps game. The Xbox sends a 60 Hz signal with every frame twice.
+VeyAmux drops the repeated frames, then triples what is left through Lossless
+Scaling / `lsfg-vk`. 90 is an exact multiple of 30, so the cadence is even.
 
-- capture **30 fps** -> lsfg **4x** -> **120**. Correct.
-- capture 60 -> lsfg 2x -> 120 images, but only 30 Hz of real motion. Wrong.
-- capture 60 -> lsfg 4x -> 240, vsync drops frames. Wrong.
+Your monitor runs **120 Hz with VRR**, so 90 fps is presented evenly instead of
+juddering 3:2. That is why VRR is part of the setup, not an optional extra.
 
-Capture at 30. Multiply by 4. Keep the monitor at 120 Hz.
+**120 fps is not this path.** VeyAmux exposes 2x and 3x, not 4x. From a 30 fps
+game that is 60 or 90. This repo is built around VeyAmux and 90.
+
+## Why VeyAmux
+
+| | |
+|---|---|
+| One AppImage | No mpv config, no shader folder, no hand-written lsfg profile. |
+| Built for this | Developed and tested on Bazzite KDE with AMD graphics. |
+| Capture + audio | V4L2 video and the card's audio in one window. |
+| Picture cleanup | Noise reduction, anti-flicker, sharpening, AA, colour, dehaze. |
+| Duplicate removal | Finds repeated frames by comparing whole pictures, like Veyra. |
+| Guard rails | Warns about MJPEG, over-asking frame gen, and refresh mismatch. |
+| Diagnostics | Built-in demo, F3 frame-time overlay, "Check my setup". |
+
+The trade-off is the multiplier: **2x or 3x**. That is the 90 fps ceiling.
 
 ## Quick start
 
-1. **Xbox:** 1080p, 60 Hz, HDR off, VRR off, 8-bit, stereo audio.
-2. **Monitor:** 1920x1080 @ 120 Hz, SDR, 100% scaling.
-3. **Card:** find the stable node with `ls -l /dev/v4l/by-id/`, then verify
-   `1920x1080 @ 30` with `v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext`.
-4. **lsfg-vk:** Lossless Scaling on Steam (beta `lsfg-vk`), then
-   `ujust get-lsfg install`; profile `mpv`, multiplier **4**, flow **0.5**,
-   performance **on**, pacing **vsync**.
-5. **mpv:** run `docs/02-bazzite-setup.md` step 6. Confirm the `(lsfg-vk)`
-   lines and visible smoothness; MangoHud can under-report (see step 7).
+1. **Xbox:** 1080p, 60 Hz, HDR off, VRR off, 8-bit, stereo uncompressed.
+2. **Monitor:** 1920x1080, **120 Hz, VRR/Adaptive Sync on**, HDR off, scaling
+   100%.
+3. **Capture:** 1080p30 on the stable `/dev/v4l/by-id/...` node. Prefer
+   YUYV/NV12 over MJPEG if both exist at 30.
+4. **Lossless Scaling:** own it on Steam, switch to the **`lsfg-vk`** beta
+   branch.
+5. **lsfg-vk 2:** `ujust get-lsfg install`, or use VeyAmux's "Install lsfg-vk 2"
+   button.
+6. **VeyAmux:** run the AppImage, pick the card, set 1080p30, frame generation
+   **Fixed 3x**, picture cleanup on. Confirm **"Active through lsfg-vk"**.
+7. **Play.** The info line should say `30 fps -> 90 fps (Lossless Scaling 3x)`.
 
-Full steps: `docs/02-bazzite-setup.md`.
+Full steps: `docs/02-veyamux-setup.md`.
 Checklist: `docs/03-checklist.md`.
-
-## Why this works (and what it is not)
-
-- The game still **simulates at 30 Hz**. You get 120 images, not 120 updates.
-- Input latency gets **worse**: 30 fps base + 4x adds roughly one to two base
-  frames (33-66 ms), plus capture latency. Expect **80-140 ms** end to end.
-- The controller stays paired to the **Xbox**. The Legion only receives video.
-- 4x ghosts more than 2x, especially HUD text, foliage and fast pans.
-- The Z2 Go is stronger than it looks for this job: the base is only 30 fps, so
-  lsfg has ~33 ms per input frame. Measure with
-  `lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p` before assuming it
-  cannot. If it falls short: 3x/90 with VRR, or 2x/60.
-- Plug in and use a performance TDP. At 15 W the 680M clocks down and 4x can
-  collapse; at 28-40 W it has room.
-
-## Review of the answer you pasted
-
-Verdict: **the tool identification is correct, the setup advice is incomplete.**
-It names the right projects but does not tell you the one thing that decides
-whether this works: the input must be **30 fps** and the display must actually
-be **120 Hz**.
-
-What it got right:
-
-- `lsfg-vk` is the correct tool. It is a Vulkan implicit layer, so it hooks any
-  Vulkan app, including `mpv` with `--gpu-api=vulkan`.
-- Lossless Scaling must be owned on Steam and switched to the **`lsfg-vk`**
-  branch; lsfg-vk loads `Lossless.dll` from it.
-- `ujust get-lsfg` is the correct Bazzite install path (it installs V2 into
-  `~/.local`).
-- `decky-lsfg-vk` is optional and Game Mode oriented, so it is not needed here.
-- `Decky-Framegen` / OptiScaler are for injecting FSR/XeSS into PC games. They
-  do not touch a UVC capture stream, so they are irrelevant.
-- Veyra is Windows 11 + DX12 only. Not usable on Bazzite.
-
-What it got wrong or left out:
-
-| Gap | Why it matters here |
-|---|---|
-| It does not mention the 30 -> 4x -> 120 math | `lsfg-vk` does not deduplicate. Capturing 60 and using 2x gives 120 images with 30 Hz of motion. |
-| It says lsfg-vk is on `github.com/PancakeTAS/lsfg-vk` | That repo is archived and only points to **lsfg-vk.dev**. The docs, CLI and builds moved. |
-| It does not mention `active_in` | The profile only activates for a matching binary. You need `active_in = "mpv"` (or `LSFGVK_PROFILE=...`). |
-| It does not mention Flatpak | A Flatpak `mpv` cannot see a layer installed in `~/.local`. Use native mpv or install the layer into the runtime. |
-| It does not mention the CLI checks | `lsfg-vk-cli validate`, `validate -p` and `healthcheck` are how you prove the config and install are sane. |
-| It does not mention Wayland/fullscreen quirks | With `pacing_mode = "vsync"`, some Wayland fullscreen apps need a windowed test first. |
-| It calls frame gen a free win | 4x adds ghosting and roughly one to two 30 fps frames of latency. It is not 120 Hz simulation. |
-
-The corrected, step-by-step version is `docs/02-bazzite-setup.md`.
 
 ## Hardware
 
-| Part | Role | Limit |
+| Part | Role | Limit that matters |
 |---|---|---|
-| Xbox Series S | GTA VI at ~1080p30 | 30 fps target |
-| Joyzzz capture card | HDMI -> USB UVC, 4K30 passthrough | Capture 1080p30 for 4x |
-| JSAUX 6-in-1 dock | USB-C hub, HDMI 2.1 4K120, 3x USB-A 3.0, 100 W PD | Use the Legion's USB4 port |
-| Legion Go S | Z2 Go / 680M-class, Bazzite | 4x/120 likely; verify with the lsfg benchmark |
-| Monitor | 1080p120 HDR | Run SDR, 120 Hz, 100% scaling |
+| Xbox Series S | GTA VI at ~1080p30 | 30 fps target; HDMI 2.1 out |
+| Joyzzz capture card | HDMI -> USB UVC, 4K30 passthrough | Capture 1080p30 |
+| JSAUX 6-in-1 dock | USB-C hub, HDMI 2.1, 3x USB-A 3.0, 100W PD | Plug into the Legion USB4 port |
+| Legion Go S | AMD Z2 Go, Radeon 680M (12 CU), Bazzite | 3x/90 is the target; plugged in, performance TDP |
+| Monitor | 1080p120 with VRR | 120 Hz + VRR, showing 90 fps |
 
 Cabling:
 
@@ -106,7 +82,7 @@ Cabling:
 3. Dock USB-C -> Legion USB4.
 4. Charger -> dock PD 100 W.
 5. Dock HDMI -> monitor.
-6. Optional: card HDMI OUT -> monitor, for the passthrough baseline.
+6. Optional: card HDMI OUT -> monitor, for the passthrough comparison.
 
 ## Settings summary
 
@@ -114,90 +90,97 @@ Cabling:
 
 1080p, 60 Hz, HDR off, VRR off, 8-bit, Standard colour, stereo uncompressed.
 
+Xbox VRR off is deliberate: the capture card needs a steady signal. The monitor's
+VRR is on the Legion's output, not the Xbox's.
+
 ### Capture
 
-1920x1080 @ 30, MJPG (or YUYV if available at 30).
-
-### lsfg-vk
-
-Profile `mpv`, multiplier 4, flow 0.5, performance mode on, pacing vsync,
-FP16 on. Config: `configs/lsfg-vk-120.toml`.
-
-### mpv
-
-`vo=gpu-next`, `gpu-api=vulkan`, `video-sync=desync`, `untimed`,
-`framerate=30`, `--no-audio`. Config: `configs/mpv-lsfg.conf`.
+1920x1080 @ 30, YUYV/NV12 if offered, otherwise MJPEG.
 
 ### Monitor
 
-1920x1080 @ 120 Hz, SDR, 100% scaling. Verify with `kscreen-doctor -o`.
+1920x1080 @ 120 Hz, **VRR on**, SDR, 100% scaling. Verify with
+`kscreen-doctor -o`.
 
-### Optional post-processing
+### VeyAmux
 
-Not the OptiScaler/ReShade stack from PC-game guides: those hook a game's
-renderer, and there is no game here. Use mpv's own shader chain instead, after
-120 is stable. CAS 1.2 for sharpening, `deband=yes` for MJPEG banding. Details:
-`docs/07-post-processing.md`.
+| Setting | Value |
+|---|---|
+| Source | capture card, 1920x1080 @ 30 |
+| Upscaling | Off/1:1 if offered; otherwise 1.5x at most |
+| Noise reduction | Spatial or Both, low/medium |
+| Anti-flicker | On |
+| Sharpness | light |
+| Frame generation | **Fixed 3x** (Lossless Scaling) |
+| Display | fullscreen, 120 Hz + VRR |
+| HDR | off |
 
-New tools from November 2026 that are worth a look (and the ones to ignore):
-`docs/08-new-tools-2026-11.md`. Short version: VeyAmux is the only one that
-matters, and it caps at 3x (90 fps), so mpv + lsfg 4x stays the 120 path.
+## What VeyAmux is not
+
+- **Not a detail-recovery upscaler.** At 1080p -> 1080p it cleans and sharpens;
+  the Xbox already did the internal upscale. 1.5x/2x/3x above 1080p is
+  supersampling, which costs GPU and gets scaled back down.
+- **Not 120 from 30.** 3x max. 90 is the goal here.
+- **Not a game mod.** It processes captured video, so there is no anti-cheat
+  surface.
+- **Not HDR.** Keep HDR off end to end.
 
 ## Verify
 
 ```bash
-# 120 Hz display
+# display: 1920x1080 @ 120, VRR-capable
 kscreen-doctor -o
 
-# 1080p30 capture (stable by-id node)
+# capture formats on the stable node
 ls -l /dev/v4l/by-id/
 v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext
 
-# lsfg installed and valid
+# lsfg-vk install and config
 ujust get-lsfg status
+~/.local/bin/lsfg-vk-cli healthcheck
 ~/.local/bin/lsfg-vk-cli validate
-ls ~/.local/share/vulkan/implicit_layer.d/ | grep -i lsfg
 
-# 120 fps output
-MANGOHUD=1 mpv av://v4l2:/dev/v4l/by-id/<card>-video-index0 --fs \
-  --profile=low-latency --untimed --video-sync=desync \
-  --demuxer-lavf-o=video_size=1920x1080,framerate=30,input_format=mjpeg \
-  --vo=gpu-next --gpu-api=vulkan --hwdec=vaapi \
-  --no-audio --no-osc --osd-level=0
+# VeyAmux's own log
+tail -n 50 ~/.config/VeyAmux/lsfg-vk.log
 ```
 
-If MangoHud shows 30 while the picture is smooth, it loaded above lsfg-vk and
-is seeing only the app's frames. Check the `(lsfg-vk)` terminal lines instead.
+VeyAmux's info line should read like:
+
+```
+≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×) · signal 1920×1080 ...
+```
+
+Pass: the display is 120 Hz with VRR, the info line says 3x, and motion is even
+while driving.
 
 ## Repo map
 
 | File | What it is |
 |---|---|
-| `docs/01-signal-chain.md` | Hardware, cabling, why 30 x 4, passthrough fallback, latency. |
-| `docs/02-bazzite-setup.md` | Install lsfg-vk, configure it, run mpv, verify, tune, troubleshoot. |
+| `docs/01-signal-chain.md` | Hardware, cabling, capture formats, latency, why 3x/90. |
+| `docs/02-veyamux-setup.md` | Install and configure VeyAmux end to end. |
 | `docs/03-checklist.md` | Home-day checklist with pass/fail steps. |
-| `docs/04-audio-controller.md` | Audio loopback and controller facts. |
-| `docs/05-settings.md` | Xbox / capture / monitor / lsfg / mpv settings and test matrix. |
-| `docs/06-alternatives.md` | Veyra, desktop GPU, Decky, OBS, capture card upgrades. |
-| `docs/07-post-processing.md` | Safe mpv shader chain (CAS/FSR1/deband); why OptiScaler/ReShade do not apply. |
-| `docs/08-new-tools-2026-11.md` | November 2026 GitHub survey: what applies to a capture feed and what does not. |
-| `configs/lsfg-vk-120.toml` | lsfg-vk profile: multiplier 4, 1080p120. |
-| `configs/mpv-lsfg.conf` | mpv config for 1080p30 -> 4x -> 120. |
-| `scripts/check-capture.sh` | Lists V4L2 devices, formats and audio sources. |
-| `scripts/check-lsfg.sh` | Checks display mode, lsfg install, config validity and the Vulkan layer. |
+| `docs/04-audio-controller.md` | Audio through VeyAmux, controller facts. |
+| `docs/05-settings.md` | All settings and the test matrix. |
+| `docs/06-troubleshooting.md` | VeyAmux/lsfg errors, VRR, audio, rollback. |
 | `AGENT-PROMPT.md` | Copy-paste briefing for the agent at the machine. |
+| `scripts/check-capture.sh` | Lists V4L2 by-id nodes, formats and audio sources. |
+| `scripts/check-veyamux.sh` | Checks VeyAmux, lsfg-vk, display mode and logs. |
+
+## Safety
+
+- VeyAmux is an **AppImage**: unsigned and unsandboxed. Download it from the
+  project's releases, run it as your user, never with `sudo`. If you want to be
+  strict, `--appimage-extract` and read the source first.
+- Do not install random "FSR 4 / DLSS on a capture feed" DLLs. There is no game
+  engine to hook.
+- Keep the controller paired to the Xbox; video capture is one-way.
 
 ## Sources
 
+- VeyAmux: https://github.com/8BiTw0LF/VeyAmux
+- VeyAmux releases: https://github.com/8BiTw0LF/VeyAmux/releases
 - lsfg-vk docs: https://lsfg-vk.dev/docs/
 - lsfg-vk installation: https://lsfg-vk.dev/docs/installation/
-- lsfg-vk configuration: https://lsfg-vk.dev/docs/configuration/
-- lsfg-vk configuration options: https://lsfg-vk.dev/docs/configuration/configuration-options/
-- lsfg-vk pacing modes: https://lsfg-vk.dev/docs/configuration/pacing-modes/
-- lsfg-vk CLI (validate/healthcheck): https://lsfg-vk.dev/docs/cli/validation/
-- lsfg-vk troubleshooting: https://lsfg-vk.dev/docs/troubleshooting/basic-troubleshooting-steps/
-- lsfg-vk 2.0 release notes: https://www.gamingonlinux.com/2026/09/lossless-scalings-frame-generation-for-linux-lsfg-vk-2-0-is-out-now
 - Bazzite framegen recipe: https://github.com/ublue-os/bazzite/blob/main/system_files/desktop/shared/usr/share/ublue-os/just/87-bazzite-framegen.just
-- decky-lsfg-vk: https://github.com/xXJSONDeruloXx/decky-lsfg-vk
-- Veyra (Windows only): https://github.com/Likely7/Veyra-NRVideo
 - GTA VI 30 fps target: https://www.glitched.online/gta-vi-targets-30fps-on-consoles-with-ps5-pro-ray-tracing-enhancements

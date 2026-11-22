@@ -13,22 +13,21 @@
 | Colour depth | 8-bit |
 | Colour space | Standard (test PC RGB if blacks crush) |
 | HDMI audio | Stereo uncompressed |
-| GTA VI mode | 30 fps / quality (there is no 60 fps mode on Series S) |
+| GTA VI mode | 30 fps / quality (no 60 fps mode on Series S) |
 
 Why 60 Hz and not 120: the card captures 60 max, and a 30 fps game in a 60 Hz
-container is exactly what 30 -> 4x wants. A 120 Hz Xbox output would just be
-downsampled by the card.
+container is exactly what VeyAmux's duplicate removal expects. A 120 Hz Xbox
+output would just be downsampled by the card.
 
 ## Capture card
 
 | Setting | Value |
 |---|---|
 | Resolution | 1920x1080 |
-| Frame rate | **30** (for 4x) |
+| Frame rate | **30** |
 | Format | YUYV/NV12 if offered at 1080p30, else MJPEG |
+| Device path | `/dev/v4l/by-id/...`, not `/dev/videoN` |
 | Audio | Card USB audio, stereo |
-
-If only 60 fps is available at 1080p, use `--vf=fps=30:round=near` in mpv.
 
 ## Monitor
 
@@ -36,44 +35,74 @@ If only 60 fps is available at 1080p, use `--vf=fps=30:round=near` in mpv.
 |---|---|
 | Resolution | 1920x1080 |
 | Refresh | **120 Hz** |
+| VRR / Adaptive Sync | **On** |
 | Scaling | 100% |
 | HDR | Off |
-| Adaptive sync | Off first; on if you fall back to 3x/90 |
 | Picture mode | Game / Overdrive |
+
+90 fps is presented evenly because VRR lets the panel follow it. Without VRR,
+90 on a fixed 120 Hz panel judders 3:2.
 
 Verify with `kscreen-doctor -o`.
 
-## lsfg-vk
+## VeyAmux
+
+### Source
 
 | Setting | Value |
 |---|---|
-| Profile name | `mpv 4x 1080p120` |
-| Active in | `mpv` |
-| Multiplier | **4** |
-| Flow scale | **0.50** start; up to 0.75 if stable |
-| Performance mode | **On** |
-| Pacing mode | **Vsync** |
-| Allow FP16 | **On** |
+| Source | Capture card |
+| Resolution | 1920x1080 |
+| Frame rate | 30 (60 if that is all the card offers) |
+| Format | YUYV/NV12 preferred, MJPEG fallback |
+| Audio input | Card USB audio |
+| Audio output | Speakers / headphones |
 
-`4x` means: for every real frame, generate 3 more. At 30 fps base, output is
-120.
+### Picture
 
-## mpv
-
-| Option | Value |
+| Setting | Value |
 |---|---|
-| `vo` | `gpu-next` |
-| `gpu-api` | `vulkan` |
-| `hwdec` | `vaapi` (try `no` if black screen) |
-| `profile` | `low-latency` |
-| `untimed` | yes |
-| `video-sync` | `desync` |
-| `audio` | no (route separately) |
-| `framerate` | 30 |
-| `input_format` | `mjpeg` or `yuyv422` |
-| `fs` | yes |
+| Upscaling | Off/1:1 if offered, else 1.5x max |
+| Noise reduction | Spatial or Both, low/medium |
+| Anti-flicker | On |
+| Sharpness | Light |
+| Anti-aliasing | Off or SMAA light |
+| FSR 3.1.6 | Off; Native AA only as an experiment |
+| Texture / clarity / dehaze | 0 first, then small amounts |
+| HDR | Off |
 
-Full file: `../configs/mpv-lsfg.conf`.
+At 1080p -> 1080p there is no enlargement to do. Cleanup is the point.
+
+### Frame generation
+
+| Setting | Value |
+|---|---|
+| Method | Lossless Scaling |
+| Multiplier | **Fixed 3x** |
+| Status | "Active through lsfg-vk" |
+| Even out frame pacing | On if offered (costs ~one refresh) |
+
+Do not use the free FSR 3.1.6 2x option for this goal; it is 2x, not 3x.
+
+### Display
+
+| Setting | Value |
+|---|---|
+| Fullscreen | Yes |
+| Resolution | 1920x1080 |
+| Refresh | 120 Hz |
+| VRR | On (KDE + monitor OSD) |
+
+## Expected numbers
+
+| Stage | Value |
+|---|---|
+| Game simulation | 30 Hz |
+| VeyAmux input | 30 fps |
+| Multiplier | 3x |
+| Output | **90 fps** |
+| Monitor | 120 Hz + VRR |
+| End-to-end latency | roughly 80-140 ms |
 
 ## Test matrix
 
@@ -81,55 +110,51 @@ Run in order, one change at a time.
 
 | # | Test | Pass looks like |
 |---|---|---|
-| 0 | `lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p` | Base FPS well above 30 (ideally 50+) |
 | 1 | Xbox -> card passthrough -> monitor | 1080p60, no software, no lag |
-| 2 | Card USB -> Legion, mpv no lsfg | Stable 30 fps, correct colours |
-| 3 | mpv + lsfg 4x, flow 0.5, perf on | ~120 fps, playable |
-| 4 | Flow 0.65 / 0.75 | ~120 fps, less ghosting |
-| 5 | lsfg 3x | ~90 fps, fewer artifacts |
-| 6 | lsfg 2x + monitor 60 Hz | ~60 fps, cleanest image |
-| 7 | 1600x900 capture + 4x | ~120 fps if 1080p was too heavy |
-
-Test 0 takes 10 seconds and tells you whether 4x is viable before you spend an
-evening tuning. Run it plugged in, on the performance TDP profile.
+| 2 | VeyAmux, frame gen off | Stable 30 fps, correct colours, audio works |
+| 3 | VeyAmux, 3x, cleanup light | 90 fps, even motion, status "Active through lsfg-vk" |
+| 4 | Uncompressed capture if available | Cleaner image, less CPU, same 90 |
+| 5 | Noise reduction low -> medium | Less MJPEG blocking, still 90 |
+| 6 | Anti-flicker on | Calmer fences/foliage, still 90 |
+| 7 | 2x instead of 3x | 60 fps, lower latency, cleaner image |
+| 8 | 1.5x upscale | Slightly different sharpness; note the GPU cost |
 
 Record the result of each. Do not tune two things at once.
 
-## What 120 means
+## What 90 means
 
-- The game still **simulates at 30 Hz**. You see 120 images, not 120 updates.
-- Input latency gets **worse**, not better: 30 fps base + 4x adds roughly one to
-  two base frames (33-66 ms) plus capture latency.
-- Expect **80-140 ms** end to end. Fine for GTA VI, not for shooters.
-- 4x ghosts more than 2x, especially HUD text, foliage and fast pans.
+- The game still **simulates at 30 Hz**. You see 90 images, not 90 updates.
+- Input latency gets **worse**, not better: 3x adds roughly one to two base
+  frames (33-66 ms) plus capture latency.
+- 3x has more artefacts than 2x, especially HUD text, foliage and fast pans.
+- VRR hides the uneven cadence that 90 would otherwise show on a 120 Hz panel.
+  It does not remove frame-generation artefacts.
 
 ## Sanity checks
 
 ```bash
-# display mode
-kscreen-doctor -o | grep -E '1920x1080|120'
+# display: 120 Hz + VRR
+kscreen-doctor -o
 
-# capture formats (use the stable by-id node)
+# capture on the stable node
 ls -l /dev/v4l/by-id/
-v4l2-ctl -d /dev/v4l/by-id/<your-card>-video-index0 --list-formats-ext
+v4l2-ctl -d /dev/v4l/by-id/<card>-video-index0 --list-formats-ext
 
-# lsfg config
-~/.local/bin/lsfg-vk-cli validate
-~/.local/bin/lsfg-vk-cli validate -p
+# lsfg-vk
+ujust get-lsfg status
 ~/.local/bin/lsfg-vk-cli healthcheck
+~/.local/bin/lsfg-vk-cli validate
 
-# can this GPU do 1080p 4x? (Base FPS should be well above 30)
-~/.local/bin/lsfg-vk-cli benchmark -w 1920 -h 1080 -m 4 -f 0.5 -p -t 10
-
-# Vulkan layer
-ls ~/.local/share/vulkan/implicit_layer.d/ | grep -i lsfg
-
-# fps - but read the caveat below before believing a low number
-MANGOHUD=1 mpv av://v4l2:/dev/v4l/by-id/<your-card>-video-index0 --fs ...
+# VeyAmux log
+tail -n 50 ~/.config/VeyAmux/lsfg-vk.log
 ```
 
-**Overlay caveat:** MangoHud is a Vulkan layer and may load *before* lsfg-vk.
-When that happens it only sees the app's 30 fps and reports 30 even though frame
-generation is working. Trust the `(lsfg-vk)` lines in the terminal, the visible
-smoothness and the monitor's 120 Hz indication first. lsfg-vk documents this
-layer-order limitation.
+VeyAmux's info line is the primary check:
+
+```
+≈1920×1080 @ 30 fps -> 90 fps (Lossless Scaling 3×) · signal 1920×1080 ...
+```
+
+If you use MangoHud, remember it can load above lsfg-vk and report 30 while
+frame generation is working. Trust VeyAmux's info line, the F3 overlay and the
+monitor OSD first.
