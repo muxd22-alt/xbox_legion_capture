@@ -65,6 +65,20 @@ else
   skp "$conf not found (Sunshine has not written its config yet)"
 fi
 
+say "Sunshine apps"
+apps="$HOME/.config/sunshine/apps.json"
+if [ -f "$apps" ]; then
+  for name in "Xbox Capture" "Desktop / Game Mode"; do
+    if grep -q "$name" "$apps" 2>/dev/null; then
+      ok "app present: $name"
+    else
+      bad "app missing: $name (add it under Applications in the web UI)"
+    fi
+  done
+else
+  skp "$apps not found; add the two apps from docs/08"
+fi
+
 say "HEVC encode capability"
 if have vainfo; then
   if vainfo 2>/dev/null | grep -q 'VAEntrypointEncSlice'; then
