@@ -1,7 +1,10 @@
 # Home-day checklist
 
-Goal: **90 fps in VeyAmux**, Xbox -> capture card -> Legion -> VeyAmux
-dedupe + 3x -> fixed 90 Hz display, VRR off. No TV, no Moonlight, no network.
+This checklist covers **Mode 1**: Xbox -> capture card -> Legion -> VeyAmux
+dedupe + 3x -> fixed 90 Hz monitor, VRR off.
+
+The other modes have their own checklists at the end: TV streaming, native games,
+and video playback. Their settings live in `07`, `08` and `09`.
 
 ## 0. Bring
 
@@ -132,3 +135,45 @@ If it says 2x, you are at 60. If it says nothing, frame gen is not active.
 - [ ] `ujust get-lsfg uninstall` removes the layer if needed.
 - [ ] Unplug USB and use the card's HDMI passthrough.
 - [ ] The Xbox still works straight into the monitor.
+
+## 12. Mode 2: capture to TV
+
+Detail: `08-stream-to-tv.md`. Do this only after section 10 passes.
+
+- [ ] Bazzite Portal -> Sunshine -> **Enable Beta (Brew)**; flatpak cannot KMS.
+- [ ] `systemctl --user status homebrew.sunshine` is active.
+- [ ] `vainfo` shows HEVC `EncSlice`; the 10 s ffmpeg test runs at ~60 fps.
+- [ ] Sunshine: KMS, VAAPI, **HEVC**, 1080p60, **50 Mbps**, HDR off.
+- [ ] Apps added: **Xbox Capture (VeyAmux)** and **Desktop / Game Mode**.
+- [ ] VeyAmux set to **Fixed 2x**; info line says 60, not 90.
+- [ ] Fold 4: V+ arm64, external display, 1080p60, HEVC, 50 Mbps.
+- [ ] V+ **SGSR upscale** on, output 3840x2160, **frame gen off**.
+- [ ] 10 minutes: no dropped frames, audio in sync, TV game mode on.
+
+Pass: 60 fps end to end, HEVC, no frame-gen stacking.
+
+## 13. Mode 3: native games
+
+Detail: `07-native-games.md`. Single-player only.
+
+- [ ] Decky Loader installed; Developer mode on.
+- [ ] DeckyMultiFrameGen installed from URL/ZIP.
+- [ ] Backends: OptiScaler and HelixSR; MAKO/ANR FG off.
+- [ ] Test game forced to **Proton Experimental**.
+- [ ] One backend only; FSR model **4.1.2 Lite** (OptiScaler) or HLX (HelixSR).
+- [ ] Overlay + log + watermark agree that FSR 4 / HLX is running.
+- [ ] 10 minutes; upscaler ms and FPS recorded.
+- [ ] **Use -> Off** rolled the game back cleanly.
+
+Pass: the small model is named in the overlay, no crash, no anti-cheat game.
+
+## 14. Video playback (separate path)
+
+Detail: `09-video-playback-upscaling.md`. Not through Sunshine.
+
+- [ ] mpv + MPV Anime Build v5.6 in the Flatpak config dir.
+- [ ] Anime4K **Fast**, Power Guard on, HDR off.
+- [ ] `scripts/check-video-playback.sh` passes.
+- [ ] 5 minutes of 1080p anime: no dropped frames.
+- [ ] Fold/Pixel: MpvRx arm64, thermal downgrade left on.
+- [ ] Jellyfin external player set where the client allows it.
