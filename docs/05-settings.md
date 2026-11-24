@@ -33,6 +33,10 @@ Capture **60**, not 30. VeyAmux removes the duplicate frames itself; a 30 Hz
 capture decimates blindly and can alias the game's 17/50 ms pacing. Use 30 only
 if 60 overloads USB or decode.
 
+**Measured on this machine:** the MS2109 card is USB 2.0 and its 1080p60 MJPG
+mode overruns the link (300 corrupt frames in 10 s). Use **1080p30 MJPG** with
+**LSFG 2x -> 60**; see `RESULTS.md`.
+
 Keep the **Xbox at 1080p**. Do not set the console to 720p to help VeyAmux;
 that throws away detail before capture. 720p is a fallback for the Legion's GPU,
 not a default (see `01-signal-chain.md`).
@@ -56,6 +60,49 @@ fixed mode with 2x (60 fps) is also exact 2:1, but 60 Hz is simpler and usually
 lower latency.
 
 Verify with `kscreen-doctor -o`.
+
+## TV path (Sunshine -> Fold 4)
+
+This mode does **not** use the 90 Hz monitor profile. The panel is 1080p60 and
+the Fold does the 4K.
+
+| Setting | Value |
+|---|---|
+| Sunshine install | Bazzite Portal -> Sunshine -> Enable (Brew); flatpak cannot KMS |
+| Capture | KMS |
+| Encoder | VAAPI |
+| Codec | **HEVC** (no AV1: the 680M cannot encode it) |
+| Resolution / fps | 1920x1080 @ 60 |
+| Bitrate | 50 Mbps (40-60 band) |
+| HDR | Off |
+| Network | Wired preferred, else 5 GHz on the 5G router |
+| Moonlight V+ | arm64, 1080p60, HEVC, 50 Mbps, SGSR upscale to 3840x2160 |
+| V+ frame generation | **Off** (VeyAmux already did 2x) |
+
+## Native games
+
+| Setting | Value |
+|---|---|
+| Decky | Installed in Desktop Mode, Developer mode on |
+| Plugin | DeckyMultiFrameGen (GPL-3.0) |
+| Backend | HelixSR **or** OptiScaler, never both |
+| Model | AMD FSR **4.1.2 Lite** (OptiScaler path) or HLX DLSS/FSR 4 (HelixSR) |
+| Proton | **Experimental** |
+| Game option | the game's own DLSS / FSR 2+ / XeSS switch |
+| Anti-cheat | never; single-player only |
+| Output | 1080p60; 90 Hz only if the game holds it |
+
+## Video playback (separate path)
+
+| Setting | Value |
+|---|---|
+| Bazzite player | mpv + MPV Anime Build v5.6 |
+| Tier | **Fast** (HQ/`*_CMP.glsl` is too heavy for 12 CU) |
+| Power Guard | On (Eco on battery) |
+| HDR | Off |
+| Android | MpvRx v1.3.2 arm64, Anime4K, thermal auto-downgrade on |
+| Alternative | mpvEx + Anime Build Android branch (not both) |
+| Jellyfin | external player where the client allows it |
 
 ## VeyAmux
 
@@ -87,12 +134,13 @@ At 1080p -> 1080p there is no enlargement to do. Cleanup is the point.
 
 ### Frame generation
 
-| Setting | Value |
-|---|---|
-| Method | Lossless Scaling |
-| Multiplier | **Fixed 3x** |
-| Even out frame pacing | **On** (~+17 ms) |
-| Status | "Active through lsfg-vk" |
+| Setting | Monitor mode | TV mode |
+|---|---|---|
+| Method | Lossless Scaling | Lossless Scaling |
+| Multiplier | **Fixed 3x** | **Fixed 2x** |
+| Even out frame pacing | **On** (~+17 ms) | **On** |
+| Status | "Active through lsfg-vk" | "Active through lsfg-vk" |
+| Client frame gen | n/a | **Off in Moonlight V+** |
 
 Do not use the free FSR 3.1.6 2x option for this goal; it is 2x, not 3x.
 
@@ -117,6 +165,9 @@ Do not use the free FSR 3.1.6 2x option for this goal; it is 2x, not 3x.
 | Monitor | 90 Hz fixed, VRR off |
 | End-to-end latency | roughly 90-150 ms |
 
+TV path: 30 unique x 2 = 60, streamed as 1080p60 HEVC, upscaled by the Fold to
+4K60. Native games: the game's own rate at 1080p60; no LSFG.
+
 ## Test matrix
 
 Run in order, one change at a time.
@@ -133,8 +184,37 @@ Run in order, one change at a time.
 | 8 | 2x instead of 3x at 60 Hz | 60 fps, lower latency, cleaner image |
 | 9 | 1.5x upscale | Slightly different sharpness; note the GPU cost |
 | 10 | 720p capture + 1.5x upscale | 90 if 1080p was too heavy; softer image |
+| 11 | Sunshine KMS + VAAPI HEVC, 1080p60 50 Mbps | V+ shows 1080p60 HEVC near 50 Mbps, 4K panel |
+| 12 | Xbox capture, TV mode, VeyAmux **2x** | Info line `30 -> 60`, no 90 in this mode |
+| 13 | 10 min driving on the TV | No dropped frames, no audio drift, TV game mode on |
+| 14 | Decky + DeckyMultiFrameGen + backends | Plugin lists OptiScaler and HelixSR; one per game |
+| 15 | FSR 4.1.2 Lite in one DX12 game | Overlay + log + watermark agree; Proton Experimental |
+| 16 | 10 min native game with FSR 4.1.2 Lite | Upscaler ms recorded; compare with game's FSR 2/3 |
+| 17 | Native game streamed to the TV | 1080p60 HEVC, V+ SGSR, V+ frame gen off |
+| 18 | mpv Anime Build, Fast, 1080p -> 4K | No dropped frames at the chosen tier |
+| 19 | MpvRx on the Fold 4, 1080p -> 4K | Thermal downgrade behaves; no throttle crash |
+| 20 | Rollback: Use -> Off | Game starts stock; launch options restored |
 
 Record the result of each. Do not tune two things at once.
+
+## Measurement log
+
+Fill this in on the Legion. `UNTESTED` is a valid entry; an estimate is not.
+Measure VeyAmux stage time with the F3 overlay in steady state, native upscaler
+time with OptiScaler's overlay or the HelixSR log, and stream health with V+'s
+stats overlay.
+
+| Mode | Date | GPU ms (stage) | FPS | Bitrate | Drops | Feel (sentence) | Tool |
+|---|---|---|---|---|---|---|---|
+| Capture to monitor | UNTESTED | UNTESTED | UNTESTED | n/a | n/a | UNTESTED | VeyAmux F3 |
+| Capture to TV | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | V+ stats |
+| Native game | UNTESTED | UNTESTED | UNTESTED | n/a | n/a | UNTESTED | OptiScaler |
+| Native game to TV | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | V+ stats |
+| Video playback (mpv) | UNTESTED | UNTESTED | UNTESTED | n/a | UNTESTED | UNTESTED | `I` overlay |
+| Video playback (MpvRx) | UNTESTED | UNTESTED | UNTESTED | n/a | UNTESTED | UNTESTED | app stats |
+
+**SGSR vs ML on the 680M:** not applicable. There is no ML stage in any mode.
+The ML fork is parked, not measured, and not part of this rig (`docs/10`).
 
 ## What 90 means
 
