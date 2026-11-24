@@ -19,6 +19,14 @@ Galaxy Z Fold 4 in DeX, HDMI 2.0 dock
 > on-device agent runs and measures. No bitrate, ms or latency number here is a
 > measurement.
 
+> **Measured host state (2026-11-24):** Sunshine is the native AppImage at
+> `~/.local/opt/sunshine-app` with the user unit `sunshine.service` (active).
+> `capture = kwin`, `encoder = vaapi`, `hevc_mode = 1` (HEVC allowed, H.264
+> fallback). The two apps are already in `apps.json`. The HEVC EncSlice entrypoint
+> exists and the 1080p60 / 50 Mbps encode smoke test passes at ~180 fps (3x real
+> time). **KMS capture and the Fold 4 / V+ client are still untested**; the
+> direct TV path is 4K60. See `RESULTS.md`.
+
 ## Why 1080p60 HEVC and not 4K
 
 - The source is 1080p. The Xbox capture is 1920x1080, and native games run at

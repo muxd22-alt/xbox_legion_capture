@@ -4,6 +4,13 @@ Three modes on one Bazzite rig: play the Xbox Series S through a capture card,
 play the Legion's own Steam library, and send either one to a 4K TV. HDR stays
 off end to end. No Windows, no Veyra, no DLSS injection into a capture feed.
 
+> **Measured on this machine (2026-11-24):** the capture card is a **USB 2.0
+> MS2109**, so 1080p60 MJPG overruns it. The working capture is **1080p30 MJPG**
+> with **LSFG 2x -> 60**; the 3x/90 monitor path is not available on this card.
+> The TV was verified at **4K60 direct**. Sunshine/HEVC host checks pass; KMS and
+> the Fold 4 client are untested. MAKO 5.0 is checked and parked (`docs/11`).
+> Full measured report: [`RESULTS.md`](RESULTS.md).
+
 ```
 MODE 1 - Xbox capture to monitor
 Xbox Series S (1080p60, HDR off, VRR off)
@@ -77,10 +84,11 @@ updates. Latency goes up, not down.
 1. **Xbox:** 1080p, 60 Hz, HDR off, VRR off, 8-bit, stereo uncompressed.
 2. **Monitor:** 1920x1080 at a **fixed 90 Hz**, **VRR/Adaptive Sync: Never**,
    HDR off, 100% scaling. Check `kscreen-doctor -o` first.
-3. **Capture:** 1080p**60** on the stable `/dev/v4l/by-id/...` node.
-4. **VeyAmux:** stock AppImage from upstream. Capture card, 1080p60, cleanup
-   light, **Fixed 3x**, **Even out frame pacing on**. Confirm
-   "Active through lsfg-vk".
+3. **Capture:** 1080p**60** on the stable `/dev/v4l/by-id/...` node. On this
+   USB 2.0 MS2109 card use **1080p30** instead; 1080p60 overruns the link.
+4. **VeyAmux:** stock AppImage from upstream. Capture card, 1080p60/30, cleanup
+   light, **Fixed 3x** for a 90 Hz monitor. On this card use **Fixed 2x -> 60**.
+   **Even out frame pacing on**. Confirm "Active through lsfg-vk".
 5. **Native games:** Decky + DeckyMultiFrameGen + HelixSR/OptiScaler. See
    `docs/07-native-games.md`.
 6. **TV:** Sunshine via Bazzite Portal (Brew build, KMS), HEVC 1080p60 50 Mbps;
@@ -215,12 +223,15 @@ For TV mode it must read `-> 60 fps (Lossless Scaling 2×)`.
 | `docs/08-stream-to-tv.md` | Sunshine KMS/VAAPI/HEVC, two apps, V+ on the Fold, frame-gen-once. |
 | `docs/09-video-playback-upscaling.md` | mpv Anime Build, MpvRx, Jellyfin. Not the game path. |
 | `docs/10-parked-experiments.md` | The ML fork and 1440p host output: why they are not in any mode. |
+| `docs/11-mako-5.md` | MAKO 5.0 evaluation: why it is parked, and how to test it safely. |
+| `RESULTS.md` | Measured facts, pass/fail, fallbacks and blockers on this machine. |
 | `AGENT-PROMPT.md` | Copy-paste briefing and acceptance checks for the on-device agent. |
 | `scripts/check-capture.sh` | V4L2 by-id nodes, formats and audio sources. |
 | `scripts/check-veyamux.sh` | VeyAmux, lsfg-vk, display mode and logs. |
-| `scripts/check-stream.sh` | Sunshine service, KMS, HEVC encode test, network. |
+| `scripts/check-stream.sh` | Sunshine service (Brew/native/Flatpak), capture/encoder, HEVC encode test, network. |
 | `scripts/check-native-games.sh` | Decky, plugin, Proton Experimental, one game's proxies/logs. |
 | `scripts/check-video-playback.sh` | mpv config, shader pack, Power Guard. |
+| `scripts/check-mako.sh` | Read-only MAKO 5.x/Decky detection and lsfg-vk conflict warning. |
 
 ## Safety
 

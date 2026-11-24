@@ -82,7 +82,8 @@ Open the plugin. Under **Backends**:
    the path for games whose DLSS/XeSS option you want to keep.
 3. Leave MAKO and ANR FG off for this rig. They are frame generation layers, not
    upscalers, and this guide does frame generation once, on the Legion, only in
-   capture mode.
+   capture mode. MAKO 5.0 is checked separately in `docs/11-mako-5.md`: it cannot
+   use VeyAmux's duplicate removal and must not stack with lsfg-vk.
 
 `Build Preset K` and `Build Vulkan kernels` are optional and slow to build.
 Leave them off for the first pass; they are not needed for FSR 4.1.2 Lite.

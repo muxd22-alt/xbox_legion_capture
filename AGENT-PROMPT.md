@@ -8,14 +8,21 @@ look at the screen.
 
 You are extending one Bazzite gaming rig into three modes. Work from
 https://github.com/muxd22-alt/xbox_legion_capture on branch
-`feature/three-modes` (draft PR #1). Read `README.md`, `docs/07`, `docs/08`,
-`docs/09` and `docs/10` before touching anything.
+`feature/three-modes` (draft PR #1). Read `README.md`, `RESULTS.md`, `docs/07`,
+`docs/08`, `docs/09`, `docs/10` and `docs/11` before touching anything.
 
 **Machine:** Legion Go S, AMD Z2 Go, Radeon 680M (12 CU, RDNA2, no matrix
 cores), 16 GB, Bazzite, KDE Plasma, 1920x1200 internal panel.
 **Capture:** Xbox Series S -> Joyzzz USB capture card -> 1080p60.
 **TV client:** Galaxy Z Fold 4 in DeX on an HDMI 2.0 dock, Moonlight V+ (64-bit).
 **Second client:** Xiaomi box, plain Moonlight only.
+
+> **Measured correction (2026-11-24):** this capture card is a **USB 2.0
+> MS2109**. Its 1080p60 MJPG mode overruns the 480 Mbps link (300 corrupt frames
+> in 10 s); **1080p30 MJPG is clean**. On this machine use **1080p30 + LSFG
+> 2x -> 60**, not 3x -> 90. The TV direct path was verified at 4K60. See
+> `RESULTS.md`. MAKO 5.0 is checked and parked (`docs/11`); do not stack it with
+> lsfg-vk.
 
 ## The locked architecture - do not redesign it
 
@@ -89,7 +96,9 @@ Then run the repo checkers and save their output:
 ```
 
 Stop and report if `vainfo` has no HEVC `EncSlice` entrypoint, or if the capture
-card does not offer 1080p60.
+card does not offer 1080p60. If it offers 1080p60 but the frames are corrupt
+(`No JPEG data found`), do not loop: select **1080p30 MJPG**, record the proof in
+`RESULTS.md`, and continue with **2x -> 60**.
 
 ## Task 1 - Mode 1 (capture to monitor) must stay green
 

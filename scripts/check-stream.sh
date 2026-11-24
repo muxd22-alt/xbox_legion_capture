@@ -22,6 +22,8 @@ say "Host"
 printf '  %s\n' "$(uname -srm)"
 if have bazzite-version; then
   printf '  %s\n' "$(bazzite-version 2>&1 | head -n 1)"
+elif [ -r /etc/os-release ]; then
+  printf '  %s\n' "$(grep -E '^PRETTY_NAME=' /etc/os-release | cut -d= -f2- | tr -d '"')"
 else
   skp "bazzite-version not found (not Bazzite?)"
 fi
@@ -34,6 +36,12 @@ if systemctl --user list-unit-files 2>/dev/null | grep -q '^homebrew.sunshine'; 
   systemctl --user is-active homebrew.sunshine >/dev/null 2>&1 \
     && ok "homebrew.sunshine is active" \
     || bad "homebrew.sunshine is not active (systemctl --user start homebrew.sunshine)"
+elif systemctl --user list-unit-files 2>/dev/null | grep -q '^sunshine.service'; then
+  printf '  unit: sunshine.service (native AppImage)\n'
+  systemctl --user is-active sunshine.service >/dev/null 2>&1 \
+    && ok "sunshine.service is active" \
+    || bad "sunshine.service is not active (systemctl --user start sunshine.service)"
+  note "native AppImage: $HOME/.local/opt/sunshine-app"
 elif systemctl --user list-unit-files 2>/dev/null | grep -q '^app-dev.lizardbyte.app.Sunshine'; then
   printf '  unit: app-dev.lizardbyte.app.Sunshine (Flatpak)\n'
   bad "Flatpak Sunshine cannot use KMS capture on a Deck image; reinstall via Bazzite Portal -> Sunshine -> Enable (Brew)"
@@ -53,13 +61,20 @@ if [ -f "$conf" ]; then
     | sed 's/^/  /' || note "no capture/encoder lines; web UI defaults are in use"
   if grep -qE '^[[:space:]]*capture[[:space:]]*=[[:space:]]*kms' "$conf"; then
     ok "capture = kms"
+  elif grep -qE '^[[:space:]]*capture[[:space:]]*=[[:space:]]*kwin' "$conf"; then
+    note "capture = kwin (desktop path; KMS is required for the Game Mode TV path)"
   else
-    bad "capture is not kms (Game Mode streaming needs KMS)"
+    bad "capture is neither kms nor kwin"
   fi
   if grep -qE '^[[:space:]]*encoder[[:space:]]*=[[:space:]]*vaapi' "$conf"; then
     ok "encoder = vaapi"
   else
     note "encoder is not pinned to vaapi in the file; check Configuration -> Audio/Video"
+  fi
+  if grep -qE '^[[:space:]]*hevc_mode[[:space:]]*=[[:space:]]*0' "$conf"; then
+    note "hevc_mode = 0: H.264 only; the Fold/TV path needs HEVC (hevc_mode = 2 or 3)"
+  elif grep -qE '^[[:space:]]*hevc_mode' "$conf"; then
+    ok "HEVC is allowed by hevc_mode"
   fi
 else
   skp "$conf not found (Sunshine has not written its config yet)"

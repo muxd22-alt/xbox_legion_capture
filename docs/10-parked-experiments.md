@@ -53,3 +53,11 @@ HEVC only, 1080p60, 40-60 Mbps.
 
 90 generated frames sampled into a 60 fps stream beat against the capture
 cadence. The TV path is 2x, full stop.
+
+## MAKO 5.0
+
+Checked 2026-11-24, **parked**. MAKO is a game-oriented Vulkan frame-generation /
+scaling layer (GPL-3.0-or-later), not a VeyAmux integration. VeyAmux removes the
+duplicate 60 Hz pictures inside its own capture path; MAKO cannot use that dedupe,
+and it must not stack with lsfg-vk. Details and a safe test procedure:
+`docs/11-mako-5.md`.

@@ -33,6 +33,10 @@ Capture **60**, not 30. VeyAmux removes the duplicate frames itself; a 30 Hz
 capture decimates blindly and can alias the game's 17/50 ms pacing. Use 30 only
 if 60 overloads USB or decode.
 
+**Measured on this machine:** the MS2109 card is USB 2.0 and its 1080p60 MJPG
+mode overruns the link (300 corrupt frames in 10 s). Use **1080p30 MJPG** with
+**LSFG 2x -> 60**; see `RESULTS.md`.
+
 Keep the **Xbox at 1080p**. Do not set the console to 720p to help VeyAmux;
 that throws away detail before capture. 720p is a fallback for the Legion's GPU,
 not a default (see `01-signal-chain.md`).
