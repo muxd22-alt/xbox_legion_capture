@@ -20,9 +20,20 @@ git push origin feature/three-modes
 - The CLI has **no credential helper** configured. Do not use
   `git config credential.helper store` for a PAT; that writes the secret in
   plaintext.
-- For persistent CLI/agent pushes, use an SSH key and switch the remote to
-  `git@github.com:muxd22-alt/xbox_legion_capture.git` after adding the public
-  key to GitHub. The private key stays in `~/.ssh`.
+- For persistent CLI/agent pushes, a dedicated SSH key is already generated:
+  - Private key: `~/.ssh/id_ed25519_github` (mode 600, no passphrase)
+  - Public key/fingerprint:
+    ```
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxQJzDWH9ibn6UvW5U3Yu0rYEhL6bQv9Vz4TWgWplqq bazzite-legion-go-s-agent
+    256 SHA256:kCQcWD3j+1sd240M/bwdScFnSKrxtdjnAlVY5mJyy+4
+    ```
+  - Add the public key at <https://github.com/settings/ssh/new> (title
+    `Bazzite Legion Go S`), then push with:
+    ```bash
+    git push ssh feature/three-modes
+    ```
+  - The `ssh` remote is already configured; the `origin` HTTPS remote is left
+    alone for GitHub Desktop. Never copy the private key into the repo or chat.
 
 ## Sunshine
 
